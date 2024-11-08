@@ -51,4 +51,10 @@ defmodule TermProjectWeb.Endpoint do
   plug Plug.Head
   plug Plug.Session, @session_options
   plug TermProjectWeb.Router
+
+  plug Plug.Static,
+  at: "/",
+  from: :term_project,
+  gzip: false, # Consider setting gzip to true for production
+  only: ~w(css fonts images js favicon.ico robots.txt html)
 end

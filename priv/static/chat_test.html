@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Test Page</title>
+</head>
+<body>
+    <h1>WebSocket Test Page for Game Chat</h1>
+    <ul id="messages"></ul>
+    <input type="text" id="messageInput" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        var socket = new WebSocket('ws://localhost:4000/socket/websocket?vsn=2.0.0');
+        socket.onopen = function(event) {
+            console.log("Connection opened");
+
+            // Join the chat channel
+            var joinMessage = JSON.stringify({
+                topic: "game:chat",
+                event: "phx_join",
+                payload: {},
+                ref: null
+            });
+            socket.send(joinMessage);
+        };
+
+        socket.onmessage = function(event) {
+            console.log('Message from server ', event.data);
+            var messageData = JSON.parse(event.data);
+            if (messageData.event === "receive_msg") {
+                var messageList = document.getElementById("messages");
+                var messageItem = document.createElement("li");
+                messageItem.textContent = messageData.payload.message;
+                messageList.appendChild(messageItem);
+            }
+        };
+
+        function sendMessage() {
+            var input = document.getElementById("messageInput");
+            var message = input.value;
+            var chatMessage = JSON.stringify({
+                topic: "game:chat",
+                event: "send_msg",
+                payload: { message: message },
+                ref: null
+            });
+            socket.send(chatMessage);
+            input.value = ""; // clear the input after sending
+        }
+    </script>
+</body>
+</html>

@@ -6,8 +6,8 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :term_project, TermProject.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: "user4959",
+  password: "abcd1234",
   hostname: "localhost",
   database: "term_project_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
@@ -42,8 +42,8 @@ config :phoenix_live_view,
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :term_project, TermProject.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: "user4959",
+  password: "abcd1234",
   hostname: "localhost",
   database: "term_project_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
