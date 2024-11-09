@@ -45,6 +45,12 @@
                 payload: { message: message },
                 ref: null
             });
+            if (socket.readyState === WebSocket.OPEN) {
+        socket.send(chatMessage);
+        input.value = ''; // Clear the input after sending
+    } else {
+        console.error("WebSocket is not open.");
+    }
             socket.send(chatMessage);
             input.value = ""; // clear the input after sending
         }
