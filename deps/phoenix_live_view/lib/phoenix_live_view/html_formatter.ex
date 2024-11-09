@@ -8,8 +8,8 @@ defmodule Phoenix.LiveView.HTMLFormatter do
 
   ## Setup
 
-  Add it as a plugin to your `.formatter.exs` file and make sure to put
-  the `heex` extension in the `inputs` option.
+  Add it as plugin to your `.formatter.exs` file and make sure to put
+  the`heex` extension in the `inputs` option.
 
   ```elixir
   [
@@ -225,34 +225,30 @@ defmodule Phoenix.LiveView.HTMLFormatter do
 
   @impl Mix.Tasks.Format
   def format(source, opts) do
-    if opts[:sigil] === :H and opts[:modifiers] === ~c"noformat" do
+    line_length = opts[:heex_line_length] || opts[:line_length] || @default_line_length
+    newlines = :binary.matches(source, ["\r\n", "\n"])
+
+    formatted =
       source
-    else
-      line_length = opts[:heex_line_length] || opts[:line_length] || @default_line_length
-      newlines = :binary.matches(source, ["\r\n", "\n"])
+      |> tokenize()
+      |> to_tree([], [], {source, newlines})
+      |> case do
+        {:ok, nodes} ->
+          nodes
+          |> HTMLAlgebra.build(opts)
+          |> Inspect.Algebra.format(line_length)
 
-      formatted =
-        source
-        |> tokenize()
-        |> to_tree([], [], {source, newlines})
-        |> case do
-          {:ok, nodes} ->
-            nodes
-            |> HTMLAlgebra.build(opts)
-            |> Inspect.Algebra.format(line_length)
+        {:error, line, column, message} ->
+          file = opts[:file] || "nofile"
+          raise ParseError, line: line, column: column, file: file, description: message
+      end
 
-          {:error, line, column, message} ->
-            file = opts[:file] || "nofile"
-            raise ParseError, line: line, column: column, file: file, description: message
-        end
+    # If the opening delimiter is a single character, such as ~H"...", or the formatted code is empty,
+    # do not add trailing newline.
+    newline = if match?(<<_>>, opts[:opening_delimiter]) or formatted == [], do: [], else: ?\n
 
-      # If the opening delimiter is a single character, such as ~H"...", or the formatted code is empty,
-      # do not add trailing newline.
-      newline = if match?(<<_>>, opts[:opening_delimiter]) or formatted == [], do: [], else: ?\n
-
-      # TODO: Remove IO.iodata_to_binary/1 call on Elixir v1.14+
-      IO.iodata_to_binary([formatted, newline])
-    end
+    # TODO: Remove IO.iodata_to_binary/1 call on Elixir v1.14+
+    IO.iodata_to_binary([formatted, newline])
   end
 
   # Tokenize contents using EEx.tokenize and Phoenix.Live.Tokenizer respectively.

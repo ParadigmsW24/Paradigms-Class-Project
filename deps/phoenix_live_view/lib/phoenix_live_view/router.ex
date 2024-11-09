@@ -125,7 +125,7 @@ defmodule Phoenix.LiveView.Router do
   Defines a live session for live redirects within a group of live routes.
 
   `live_session/3` allow routes defined with `live/4` to support
-  `navigate` redirects from the client with navigation purely over the existing
+  `live_redirect` from the client with navigation purely over the existing
   websocket connection. This allows live routes defined in the router to
   mount a new root LiveView without additional HTTP requests to the server.
   For backwards compatibility reasons, all live routes defined outside
@@ -140,7 +140,7 @@ defmodule Phoenix.LiveView.Router do
   the `mount` callback. Authorization rules generally happen on `mount`
   (for instance, is the user allowed to see this page?) and also on
   `handle_event` (is the user allowed to delete this item?). Performing
-  authorization on mount is important because `navigate`s *do not go
+  authorization on mount is important because `live_redirect`s *do not go
   through the plug pipeline*.
 
   `live_session` can be used to draw boundaries between groups of LiveViews.
@@ -255,7 +255,7 @@ defmodule Phoenix.LiveView.Router do
     Module.register_attribute(module, :phoenix_live_sessions, accumulate: true)
     vsn = session_vsn(module)
 
-    if not is_atom(name) do
+    unless is_atom(name) do
       raise ArgumentError, """
       expected live_session name to be an atom, got: #{inspect(name)}
       """
@@ -398,8 +398,6 @@ defmodule Phoenix.LiveView.Router do
       Module.get_attribute(router, :phoenix_live_session_current) ||
         %{name: :default, extra: %{}, vsn: session_vsn(router)}
 
-    helpers = Module.get_attribute(router, :phoenix_helpers)
-
     live_view = Phoenix.Router.scoped_alias(router, live_view)
     {private, metadata, warn_on_verify, opts} = validate_live_opts!(opts)
 
@@ -408,19 +406,13 @@ defmodule Phoenix.LiveView.Router do
       |> Keyword.put(:router, router)
       |> Keyword.put(:action, action)
 
-    {as_helper, as_action} =
-      if helpers do
-        inferred_as(live_view, opts[:as], action)
-      else
-        {nil, action}
-      end
+    {as_helper, as_action} = inferred_as(live_view, opts[:as], action)
 
-    # TODO: Remove :log_module when we require Phoenix v1.8+
     metadata =
       metadata
       |> Map.put(:phoenix_live_view, {live_view, action, opts, live_session})
-      |> Map.put(:mfa, {live_view, :mount, 3})
-      |> Map.put(:log_module, live_view)
+      |> Map.put_new(:log_module, live_view)
+      |> Map.put_new(:log_function, :mount)
 
     {as_action,
      alias: false,

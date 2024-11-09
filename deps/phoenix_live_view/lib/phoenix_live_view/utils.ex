@@ -96,17 +96,12 @@ defmodule Phoenix.LiveView.Utils do
   def force_assign(assigns, nil, key, val), do: Map.put(assigns, key, val)
 
   def force_assign(assigns, changed, key, val) do
-    # If the current value is a composite type (list, map, tuple),
-    # we store it in changed so we can perform nested change tracking.
-    # Also note the use of put_new is important.
-    # We want to keep the original value from assigns and not any
-    # intermediate ones that may appear.
-    changed_val =
-      case Map.get(assigns, key) do
-        val when is_list(val) or is_map(val) or is_tuple(val) -> val
-        _ -> true
-      end
-
+    # If the current value is a map, we store it in changed so
+    # we can perform nested change tracking. Also note the use
+    # of put_new is important. We want to keep the original value
+    # from assigns and not any intermediate ones that may appear.
+    current_val = Map.get(assigns, key)
+    changed_val = if is_map(current_val), do: current_val, else: true
     changed = Map.put_new(changed, key, changed_val)
     Map.put(%{assigns | __changed__: changed}, key, val)
   end
@@ -407,7 +402,7 @@ defmodule Phoenix.LiveView.Utils do
         raise ArgumentError, """
         invalid option returned from #{inspect(mod)}.#{fun}/#{arity}.
 
-        Expected keys to be one of #{inspect(@mount_opts)},
+        Expected keys to be one of #{inspect(@mount_opts)}
         got: #{inspect(key)}: #{inspect(val)}
         """
     end)
@@ -418,7 +413,7 @@ defmodule Phoenix.LiveView.Utils do
   end
 
   defp handle_mount_option(socket, :temporary_assigns, temp_assigns) do
-    if not Keyword.keyword?(temp_assigns) do
+    unless Keyword.keyword?(temp_assigns) do
       raise "the :temporary_assigns mount option must be keyword list"
     end
 

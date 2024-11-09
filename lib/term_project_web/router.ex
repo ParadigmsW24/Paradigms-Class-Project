@@ -18,7 +18,7 @@ defmodule TermProjectWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    get "/chat", ChatController, :index
+    get "/chat", PageController, :chat
   end
 
   # Other scopes may use custom stacks.

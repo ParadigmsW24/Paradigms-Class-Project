@@ -95,10 +95,11 @@ import {
   PHX_THROTTLE,
   PHX_TRACK_UPLOADS,
   PHX_SESSION,
+  PHX_FEEDBACK_FOR,
+  PHX_FEEDBACK_GROUP,
   RELOAD_JITTER_MIN,
   RELOAD_JITTER_MAX,
-  PHX_REF_SRC,
-  PHX_RELOAD_STATUS
+  PHX_REF,
 } from "./constants"
 
 import {
@@ -115,8 +116,6 @@ import Hooks from "./hooks"
 import LiveUploader from "./live_uploader"
 import View from "./view"
 import JS from "./js"
-
-export let isUsedInput = (el) => DOM.isUsedInput(el)
 
 export default class LiveSocket {
   constructor(url, phxSocket, opts = {}){
@@ -159,10 +158,8 @@ export default class LiveSocket {
     this.localStorage = opts.localStorage || window.localStorage
     this.sessionStorage = opts.sessionStorage || window.sessionStorage
     this.boundTopLevelEvents = false
-    this.boundEventNames = new Set()
     this.serverCloseRef = null
     this.domCallbacks = Object.assign({
-      jsQuerySelectorAll: null,
       onPatchStart: closure(),
       onPatchEnd: closure(),
       onNodeAdded: closure(),
@@ -217,7 +214,6 @@ export default class LiveSocket {
     // enable debug by default if on localhost and not explicitly disabled
     if(window.location.hostname === "localhost" && !this.isDebugDisabled()){ this.enableDebug() }
     let doConnect = () => {
-      this.resetReloadStatus()
       if(this.joinRootViews()){
         this.bindTopLevelEvents()
         this.socket.connect()
@@ -253,16 +249,14 @@ export default class LiveSocket {
   }
 
   execJS(el, encodedJS, eventType = null){
-    let e = new CustomEvent("phx:exec", {detail: {sourceElement: el}})
-    this.owner(el, view => JS.exec(e, eventType, encodedJS, view, el))
+    this.owner(el, view => JS.exec(eventType, encodedJS, view, el))
   }
 
   // private
 
   execJSHookPush(el, phxEvent, data, callback){
     this.withinOwners(el, view => {
-      let e = new CustomEvent("phx:exec", {detail: {sourceElement: el}})
-      JS.exec(e, "hook", phxEvent, view, el, ["push", {data, callback}])
+      JS.exec("hook", phxEvent, view, el, ["push", {data, callback}])
     })
   }
 
@@ -313,6 +307,34 @@ export default class LiveSocket {
     })
   }
 
+  wrapPush(view, opts, push){
+    let latency = this.getLatencySim()
+    let oldJoinCount = view.joinCount
+    if(!latency){
+      if(this.isConnected() && opts.timeout){
+        return push().receive("timeout", () => {
+          if(view.joinCount === oldJoinCount && !view.isDestroyed()){
+            this.reloadWithJitter(view, () => {
+              this.log(view, "timeout", () => ["received timeout while communicating with server. Falling back to hard refresh for recovery"])
+            })
+          }
+        })
+      } else {
+        return push()
+      }
+    }
+
+    let fakePush = {
+      receives: [],
+      receive(kind, cb){ this.receives.push([kind, cb]) }
+    }
+    setTimeout(() => {
+      if(view.isDestroyed()){ return }
+      fakePush.receives.reduce((acc, [kind, cb]) => acc.receive(kind, cb), push())
+    }, latency)
+    return fakePush
+  }
+
   reloadWithJitter(view, log){
     clearTimeout(this.reloadWithJitterTimer)
     this.disconnect()
@@ -320,7 +342,7 @@ export default class LiveSocket {
     let maxMs = this.reloadJitterMax
     let afterMs = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs
     let tries = Browser.updateLocal(this.localStorage, window.location.pathname, CONSECUTIVE_RELOADS, 0, count => count + 1)
-    if(tries >= this.maxReloads){
+    if(tries > this.maxReloads){
       afterMs = this.failsafeJitter
     }
     this.reloadWithJitterTimer = setTimeout(() => {
@@ -328,7 +350,7 @@ export default class LiveSocket {
       if(view.isDestroyed() || view.isConnected()){ return }
       view.destroy()
       log ? log() : this.log(view, "join", () => [`encountered ${tries} consecutive reloads`])
-      if(tries >= this.maxReloads){
+      if(tries > this.maxReloads){
         this.log(view, "join", () => [`exceeded ${this.maxReloads} consecutive reloads. Entering failsafe mode`])
       }
       if(this.hasPendingLink()){
@@ -378,8 +400,7 @@ export default class LiveSocket {
     return rootsFound
   }
 
-  redirect(to, flash, reloadToken){
-    if(reloadToken){ Browser.setCookie(PHX_RELOAD_STATUS, reloadToken, 60) }
+  redirect(to, flash){
     this.unload()
     Browser.redirect(to, flash)
   }
@@ -387,19 +408,16 @@ export default class LiveSocket {
   replaceMain(href, flash, callback = null, linkRef = this.setPendingLink(href)){
     let liveReferer = this.currentLocation.href
     this.outgoingMainEl = this.outgoingMainEl || this.main.el
-    let removeEls = DOM.all(this.outgoingMainEl, `[${this.binding("remove")}]`)
     let newMainEl = DOM.cloneNode(this.outgoingMainEl, "")
     this.main.showLoader(this.loaderTimeout)
     this.main.destroy()
 
     this.main = this.newRootView(newMainEl, flash, liveReferer)
     this.main.setRedirect(href)
-    this.transitionRemoves(removeEls, true)
+    this.transitionRemoves(null, true)
     this.main.join((joinCount, onDone) => {
       if(joinCount === 1 && this.commitPendingLink(linkRef)){
         this.requestDOMUpdate(() => {
-          // remove phx-remove els right before we replace the main element
-          removeEls.forEach(el => el.remove())
           DOM.findPhxSticky(document).forEach(el => newMainEl.appendChild(el))
           this.outgoingMainEl.replaceWith(newMainEl)
           this.outgoingMainEl = null
@@ -410,33 +428,16 @@ export default class LiveSocket {
     })
   }
 
-  transitionRemoves(elements, skipSticky, callback){
+  transitionRemoves(elements, skipSticky){
     let removeAttr = this.binding("remove")
+    elements = elements || DOM.all(document, `[${removeAttr}]`)
+
     if(skipSticky){
       const stickies = DOM.findPhxSticky(document) || []
       elements = elements.filter(el => !DOM.isChildOfAny(el, stickies))
     }
-    let silenceEvents = (e) => {
-      e.preventDefault()
-      e.stopImmediatePropagation()
-    }
     elements.forEach(el => {
-      // prevent all listeners we care about from bubbling to window
-      // since we are removing the element
-      for(let event of this.boundEventNames){
-        el.addEventListener(event, silenceEvents, true)
-      }
       this.execJS(el, el.getAttribute(removeAttr), "remove")
-    })
-    // remove the silenced listeners when transitions are done incase the element is re-used
-    // and call caller's callback as soon as we are done with transitions
-    this.requestDOMUpdate(() => {
-      elements.forEach(el => {
-        for(let event of this.boundEventNames){
-          el.removeEventListener(event, silenceEvents, true)
-        }
-      })
-      callback && callback()
     })
   }
 
@@ -450,7 +451,7 @@ export default class LiveSocket {
 
   owner(childEl, callback){
     let view = maybe(childEl.closest(PHX_VIEW_SELECTOR), el => this.getViewByEl(el)) || this.main
-    return view && callback ? callback(view) : view
+    if(view){ callback(view) }
   }
 
   withinOwners(childEl, callback){
@@ -482,8 +483,25 @@ export default class LiveSocket {
     }
   }
 
+  setActiveElement(target){
+    if(this.activeElement === target){ return }
+    this.activeElement = target
+    let cancel = () => {
+      if(target === this.activeElement){ this.activeElement = null }
+      target.removeEventListener("mouseup", this)
+      target.removeEventListener("touchend", this)
+    }
+    target.addEventListener("mouseup", cancel)
+    target.addEventListener("touchend", cancel)
+  }
+
   getActiveElement(){
-    return document.activeElement
+    if(document.activeElement === document.body){
+      return this.activeElement || document.activeElement
+    } else {
+      // document.activeElement can be null in Internet Explorer 11
+      return document.activeElement || document.body
+    }
   }
 
   dropActiveElement(view){
@@ -529,23 +547,23 @@ export default class LiveSocket {
       if(matchKey && matchKey.toLowerCase() !== pressedKey){ return }
 
       let data = {key: e.key, ...this.eventMeta(type, e, targetEl)}
-      JS.exec(e, type, phxEvent, view, targetEl, ["push", {data}])
+      JS.exec(type, phxEvent, view, targetEl, ["push", {data}])
     })
     this.bind({blur: "focusout", focus: "focusin"}, (e, type, view, targetEl, phxEvent, phxTarget) => {
       if(!phxTarget){
         let data = {key: e.key, ...this.eventMeta(type, e, targetEl)}
-        JS.exec(e, type, phxEvent, view, targetEl, ["push", {data}])
+        JS.exec(type, phxEvent, view, targetEl, ["push", {data}])
       }
     })
     this.bind({blur: "blur", focus: "focus"}, (e, type, view, targetEl, phxEvent, phxTarget) => {
       // blur and focus are triggered on document and window. Discard one to avoid dups
       if(phxTarget === "window"){
         let data = this.eventMeta(type, e, targetEl)
-        JS.exec(e, type, phxEvent, view, targetEl, ["push", {data}])
+        JS.exec(type, phxEvent, view, targetEl, ["push", {data}])
       }
     })
-    this.on("dragover", e => e.preventDefault())
-    this.on("drop", e => {
+    window.addEventListener("dragover", e => e.preventDefault())
+    window.addEventListener("drop", e => {
       e.preventDefault()
       let dropTargetId = maybe(closestPhxBinding(e.target, this.binding(PHX_DROP_TARGET)), trueTarget => {
         return trueTarget.getAttribute(this.binding(PHX_DROP_TARGET))
@@ -574,13 +592,8 @@ export default class LiveSocket {
   setPendingLink(href){
     this.linkRef++
     this.pendingLink = href
-    this.resetReloadStatus()
     return this.linkRef
   }
-
-  // anytime we are navigating or connecting, drop reload cookie in case
-  // we issue the cookie but the next request was interrupted and the server never dropped it
-  resetReloadStatus(){ Browser.deleteCookie(PHX_RELOAD_STATUS) }
 
   commitPendingLink(linkRef){
     if(this.linkRef !== linkRef){
@@ -625,7 +638,7 @@ export default class LiveSocket {
   }
 
   bindClicks(){
-    this.on("mousedown", e => this.clickStartedAtTarget = e.target)
+    window.addEventListener("mousedown", e => this.clickStartedAtTarget = e.target)
     this.bindClick("click", "click")
   }
 
@@ -637,9 +650,7 @@ export default class LiveSocket {
       // therefore the clickStartedAtTarget is stale
       if(e.detail === 0) this.clickStartedAtTarget = e.target
       let clickStartedAtTarget = this.clickStartedAtTarget || e.target
-      // when searching the target for the click event, we always want to
-      // use the actual event target, see #3372
-      target = closestPhxBinding(e.target, click)
+      target = closestPhxBinding(clickStartedAtTarget, click)
       this.dispatchClickAway(e, clickStartedAtTarget)
       this.clickStartedAtTarget = null
       let phxEvent = target && target.getAttribute(click)
@@ -651,11 +662,11 @@ export default class LiveSocket {
       if(target.getAttribute("href") === "#"){ e.preventDefault() }
 
       // noop if we are in the middle of awaiting an ack for this el already
-      if(target.hasAttribute(PHX_REF_SRC)){ return }
+      if(target.hasAttribute(PHX_REF)){ return }
 
       this.debounce(target, e, "click", () => {
         this.withinOwners(target, view => {
-          JS.exec(e, "click", phxEvent, view, target, ["push", {data: this.eventMeta("click", e, target)}])
+          JS.exec("click", phxEvent, view, target, ["push", {data: this.eventMeta("click", e, target)}])
         })
       })
     }, false)
@@ -668,7 +679,7 @@ export default class LiveSocket {
         this.withinOwners(el, view => {
           let phxEvent = el.getAttribute(phxClickAway)
           if(JS.isVisible(el) && JS.isInViewport(el)){
-            JS.exec(e, "click", phxEvent, view, el, ["push", {data: this.eventMeta("click", e, e.target)}])
+            JS.exec("click", phxEvent, view, el, ["push", {data: this.eventMeta("click", e, e.target)}])
           }
         })
       }
@@ -693,7 +704,7 @@ export default class LiveSocket {
       DOM.dispatchEvent(window, "phx:navigate", {detail: {href, patch: type === "patch", pop: true}})
       this.requestDOMUpdate(() => {
         if(this.main.isConnected() && (type === "patch" && id === this.main.id)){
-          this.main.pushLinkPatch(event, href, null, () => {
+          this.main.pushLinkPatch(href, null, () => {
             this.maybeScroll(scroll)
           })
         } else {
@@ -719,9 +730,9 @@ export default class LiveSocket {
 
       this.requestDOMUpdate(() => {
         if(type === "patch"){
-          this.pushHistoryPatch(e, href, linkState, target)
+          this.pushHistoryPatch(href, linkState, target)
         } else if(type === "redirect"){
-          this.historyRedirect(e, href, linkState, null, target)
+          this.historyRedirect(href, linkState)
         } else {
           throw new Error(`expected ${PHX_LIVE_LINK} to be "patch" or "redirect", got: ${type}`)
         }
@@ -755,11 +766,11 @@ export default class LiveSocket {
     return callback ? callback(done) : done
   }
 
-  pushHistoryPatch(e, href, linkState, targetEl){
+  pushHistoryPatch(href, linkState, targetEl){
     if(!this.isConnected() || !this.main.isMain()){ return Browser.redirect(href) }
 
     this.withPageLoading({to: href, kind: "patch"}, done => {
-      this.main.pushLinkPatch(e, href, targetEl, linkRef => {
+      this.main.pushLinkPatch(href, targetEl, linkRef => {
         this.historyPatch(href, linkState, linkRef)
         done()
       })
@@ -774,8 +785,7 @@ export default class LiveSocket {
     this.registerNewLocation(window.location)
   }
 
-  historyRedirect(e, href, linkState, flash, targetEl){
-    if(targetEl && e.isTrusted && e.type !== "popstate"){ targetEl.classList.add("phx-click-loading") }
+  historyRedirect(href, linkState, flash){
     if(!this.isConnected() || !this.main.isMain()){ return Browser.redirect(href, flash) }
 
     // convert to full href if only path prefix
@@ -830,7 +840,7 @@ export default class LiveSocket {
           })
         })
       }
-    })
+    }, true)
 
     this.on("submit", e => {
       let phxEvent = e.target.getAttribute(this.binding("submit"))
@@ -841,33 +851,14 @@ export default class LiveSocket {
       e.preventDefault()
       e.target.disabled = true
       this.withinOwners(e.target, view => {
-        JS.exec(e, "submit", phxEvent, view, e.target, ["push", {submitter: e.submitter}])
+        JS.exec("submit", phxEvent, view, e.target, ["push", {submitter: e.submitter}])
       })
-    })
+    }, false)
 
     for(let type of ["change", "input"]){
       this.on(type, e => {
-        if(e instanceof CustomEvent && e.target.form === undefined){
-          throw new Error(`dispatching a custom ${type} event is only supported on input elements inside a form`)
-        }
         let phxChange = this.binding("change")
         let input = e.target
-        // do not fire phx-change if we are in the middle of a composition session
-        // https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/isComposing
-        // Safari has issues if the input is updated while composing
-        // see https://github.com/phoenixframework/phoenix_live_view/issues/3322
-        if(e.isComposing){
-          const key = `composition-listener-${type}`
-          if(!DOM.private(input, key)){
-            DOM.putPrivate(input, key, true)
-            input.addEventListener("compositionend", () => {
-              // trigger a new input/change event
-              input.dispatchEvent(new Event(type, {bubbles: true}))
-              DOM.deletePrivate(input, key)
-            }, {once: true})
-          }
-          return
-        }
         let inputEvent = input.getAttribute(phxChange)
         let formEvent = input.form && input.form.getAttribute(phxChange)
         let phxEvent = inputEvent || formEvent
@@ -888,14 +879,17 @@ export default class LiveSocket {
         this.debounce(input, e, type, () => {
           this.withinOwners(dispatcher, view => {
             DOM.putPrivate(input, PHX_HAS_FOCUSED, true)
-            JS.exec(e, "change", phxEvent, view, input, ["push", {_target: e.target.name, dispatcher: dispatcher}])
+            if(!DOM.isTextualInput(input)){
+              this.setActiveElement(input)
+            }
+            JS.exec("change", phxEvent, view, input, ["push", {_target: e.target.name, dispatcher: dispatcher}])
           })
         })
-      })
+      }, false)
     }
     this.on("reset", (e) => {
       let form = e.target
-      DOM.resetForm(form)
+      DOM.resetForm(form, this.binding(PHX_FEEDBACK_FOR), this.binding(PHX_FEEDBACK_GROUP))
       let input = Array.from(form.elements).find(el => el.type === "reset")
       if(input){
         // wait until next tick to get updated input value
@@ -929,15 +923,9 @@ export default class LiveSocket {
   }
 
   on(event, callback){
-    this.boundEventNames.add(event)
     window.addEventListener(event, e => {
       if(!this.silenced){ callback(e) }
     })
-  }
-
-  jsQuerySelectorAll(sourceEl, query, defaultQuery){
-    let all = this.domCallbacks.jsQuerySelectorAll
-    return all ? all(sourceEl, query, defaultQuery) : defaultQuery()
   }
 }
 

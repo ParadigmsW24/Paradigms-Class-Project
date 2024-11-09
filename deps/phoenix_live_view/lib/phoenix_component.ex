@@ -788,9 +788,8 @@ defmodule Phoenix.Component do
   for more information.
   '''
   @doc type: :macro
-  defmacro sigil_H({:<<>>, meta, [expr]}, modifiers)
-           when modifiers == [] or modifiers == ~c"noformat" do
-    if not Macro.Env.has_var?(__CALLER__, {:assigns, nil}) do
+  defmacro sigil_H({:<<>>, meta, [expr]}, []) do
+    unless Macro.Env.has_var?(__CALLER__, {:assigns, nil}) do
       raise "~H requires a variable named \"assigns\" to exist and be set to a map"
     end
 
@@ -1020,7 +1019,7 @@ defmodule Phoenix.Component do
 
     ~H"""
     <%= for entry <- @entries do %><%= call_inner_block!(entry, @changed, @argument) %><% end %>
-    """noformat
+    """
   end
 
   def __render_slot__(changed, entry, argument) when is_map(entry) do
@@ -1456,12 +1455,6 @@ defmodule Phoenix.Component do
     * `:as` - the `name` prefix to be used in form inputs
     * `:id` - the `id` prefix to be used in form inputs
     * `:errors` - keyword list of errors (used by maps exclusively)
-    * `:action` - The action that was taken against the form. This value can be
-      used to distinguish between different operations such as the user typing
-      into a form for validation, or submitting a form for a database insert.
-      For example: `to_form(changeset, action: :validate)`,
-      or `to_form(changeset, action: :save)`. The provided action is passed
-      to the underlying `Phoenix.HTML.FormData` implementation options.
 
   The underlying data may accept additional options when
   converted to forms. For example, a map accepts `:errors`
@@ -1477,8 +1470,7 @@ defmodule Phoenix.Component do
   form options.
 
   Errors in a form are only displayed if the changeset's `action`
-  field is set (and it is not set to `:ignore`) and can be filtered
-  by whether the fields have been used on the client or not. Refer to
+  field is set (and it is not set to `:ignore`). Refer to
   [a note on :errors for more information](#form/1-a-note-on-errors).
   """
   def to_form(data_or_params, options \\ [])
@@ -1499,17 +1491,9 @@ defmodule Phoenix.Component do
 
     {_as, options} = Keyword.pop(options, :as)
     {errors, options} = Keyword.pop(options, :errors, data.errors)
-    {action, options} = Keyword.pop(options, :action)
     options = Keyword.merge(data.options, options)
 
-    %Phoenix.HTML.Form{
-      data
-      | action: action,
-        errors: errors,
-        id: id,
-        name: name,
-        options: options
-    }
+    %{data | errors: errors, id: id, name: name, options: options}
   end
 
   def to_form(data, options) do
@@ -1535,88 +1519,6 @@ defmodule Phoenix.Component do
     end
 
     Phoenix.HTML.FormData.to_form(data, options)
-  end
-
-  @doc """
-  Checks if the input field was used by the client.
-
-  Used inputs are only those inputs that have been focused, interacted with, or
-  submitted by the client. For LiveView, this is used to filter errors from the
-  `Phoenix.HTML.FormData` implementation to avoid showing "field can't be blank"
-  in scenarios where the client hasn't yet interacted with specific fields.
-
-  Used inputs are tracked internally by the client sending a sibling key
-  derived from each input name, which indicates the inputs that remain  unused
-  on the client. For example, a form with email and title fields where only the
-  title has been modified so far on the client, would send the following payload:
-
-      %{
-        "title" => "new title",
-        "email" => "",
-        "_unused_email" => ""
-      }
-
-  The `_unused_email` key indicates that the email field has not been used by the
-  client, which is used to filter errors from the UI.
-
-  Nested fields are also supported. For example, a form with a nested datetime field
-  is considered used if any of the nested parameters are used.
-
-      %{
-        "bday" => %{
-          "year" => "",
-          "month" => "",
-          "day" => "",
-          "_unused_day" => ""
-        }
-      }
-
-  The `_unused_day` key indicates that the day field has not been used by the client,
-  but the year and month fields have been used, meaning the birthday field as a whole
-  was used.
-
-  ## Examples
-
-  For example, imagine in your template you render a title and email input.
-  On initial load the end-user begins typing the title field. The client will send
-  the entire form payload to the server with the typed title and an empty email.
-
-  The `Phoenix.HTML.FormData` implementation will consider an empty email in
-  this scenario as invalid, but the user shouldn't see the error because they
-  haven't yet used the email input. To handle this, `used_input?/1` can be used to
-  filter errors from the client by referencing param metadata to distinguish between
-  used and unused input fields. For non-LiveViews, all inputs are considered used.
-
-  ```heex
-  <input type="text" name={@form[:title].name} value={@form[:title].value} />
-
-  <div :if={used_input?(@form[:title])}>
-    <p :for={error <- @form[:title].errors}><%= error %></p>
-  </div>
-
-  <input type="text" name={@form[:email].name} value={@form[:email].value} />
-
-  <div :if={used_input?(@form[:email])}>
-    <p :for={error <- @form[:email].errors}><%= error %></p>
-  </div>
-  ```
-  """
-  def used_input?(%Phoenix.HTML.FormField{field: field, form: form}) do
-    used_param?(form.params, field)
-  end
-
-  defp used_param?(_params, "_unused_" <> _), do: false
-
-  defp used_param?(params, field) do
-    field_str = "#{field}"
-    unused_field_str = "_unused_#{field}"
-
-    case params do
-      %{^field_str => _, ^unused_field_str => _} -> false
-      %{^field_str => %{} = nested} -> Enum.any?(Map.keys(nested), &used_param?(nested, &1))
-      %{^field_str => _val} -> true
-      %{} -> false
-    end
   end
 
   @doc """
@@ -2105,7 +2007,7 @@ defmodule Phoenix.Component do
 
   def live_title(assigns) do
     ~H"""
-    <title data-prefix={@prefix} data-suffix={@suffix} phx-no-format><%= @prefix %><%= render_slot(@inner_block) %><%= @suffix %></title>
+    <title data-prefix={@prefix} data-suffix={@suffix}><%= @prefix %><%= render_slot(@inner_block) %><%= @suffix %></title>
     """
   end
 
@@ -2212,25 +2114,17 @@ defmodule Phoenix.Component do
   insert was attempted, and the presence of that action will cause errors to be
   displayed. The same is true for Repo.update/delete.
 
-  Error visibility is handled by providing the action to `to_form/2`, which will
-  set the underlying changeset action. You can also set the action manually by
-  directly updating on the `Ecto.Changeset` struct field, or by using
+  If you want to show errors manually you can also set the action yourself,
+  either directly on the `Ecto.Changeset` struct field or by using
   `Ecto.Changeset.apply_action/2`. Since the action can be arbitrary, you can
   set it to `:validate` or anything else to avoid giving the impression that a
   database operation has actually been attempted.
 
-  ### Displaying errors on used and unused input fields
-
-  Used inputs are only those inputs that have been focused, interacted with, or
-  submitted by the client. In most cases, a user shouldn't receive error feedback
-  for forms they haven't yet interacted with, until they submit the form. Filtering
-  the errors based on used input fields can be done with `used_input?/1`.
-
   ## Example: outside LiveView (regular HTTP requests)
 
   The `form` component can still be used to submit forms outside of LiveView.
-  In such cases, the standard HTML `action` attribute MUST be given.
-  Without said attribute, the `form` method and csrf token are discarded.
+  In such cases, the `action` attribute MUST be given. Without said attribute,
+  the `form` method and csrf token are discarded.
 
   ```heex
   <.form :let={f} for={@changeset} action={~p"/comments/#{@comment}"}>
@@ -2302,8 +2196,7 @@ defmodule Phoenix.Component do
     The HTTP method.
     It is only used if an `:action` is given. If the method is not `get` nor `post`,
     an input tag with name `_method` is generated alongside the form tag.
-    If an `:action` is given with no method, the method will default to the return value
-    of `Phoenix.HTML.FormData.to_form/2` (usually `post`).
+    If an `:action` is given with no method, the method will default to `post`.
     """
   )
 
@@ -2377,10 +2270,10 @@ defmodule Phoenix.Component do
     ~H"""
     <form {@attrs}>
       <%= if @hidden_method && @hidden_method not in ~w(get post) do %>
-        <input name="_method" type="hidden" hidden value={@hidden_method} />
+        <input name="_method" type="hidden" hidden value={@hidden_method}>
       <% end %>
       <%= if @csrf_token do %>
-        <input name="_csrf_token" type="hidden" hidden value={@csrf_token} />
+        <input name="_csrf_token" type="hidden" hidden value={@csrf_token}>
       <% end %>
       <%= render_slot(@inner_block, @form) %>
     </form>
@@ -2388,13 +2281,8 @@ defmodule Phoenix.Component do
   end
 
   defp form_method(nil), do: {"post", nil}
-
-  defp form_method(method) when is_binary(method) do
-    case String.downcase(method) do
-      method when method in ~w(get post) -> {method, nil}
-      _ -> {"post", method}
-    end
-  end
+  defp form_method(method) when method in ~w(get post), do: {method, nil}
+  defp form_method(method) when is_binary(method), do: {"post", method}
 
   @doc """
   Renders nested form inputs for associations or embeds.
@@ -2405,10 +2293,10 @@ defmodule Phoenix.Component do
 
   ```heex
   <.form
-    for={@form}
+    :let={f}
     phx-change="change_name"
   >
-    <.inputs_for :let={f_nested} field={@form[:nested]}>
+    <.inputs_for :let={f_nested} field={f[:nested]}>
       <.input type="text" field={f_nested[:name]} />
     </.inputs_for>
   </.form>
@@ -2498,86 +2386,9 @@ defmodule Phoenix.Component do
   and `value="new"` name with accompanied "add more" text. Please note that this button must
   have `type="button"` to prevent it from submitting the form.
   Ecto will treat unknown sort params as new children and build a new child.
-  This button is optional and only necessary if you want to dynamically add entries.
+  This button is optional and only necessary if you want to dyamically add entries.
   You can optionally add a similar button before the `<.inputs_for>`, in the case you want
   to prepend entries.
-
-  > ### A note on accessing a field's `value` {: .warning}
-  >
-  > You may be tempted to access `form[:field].value` or attempt to manipulate
-  > the form metadata in your templates. However, bear in mind that the `form[:field]`
-  > value reflects the most recent changes. For example, an `:integer` field may
-  > either contain integer values, but it may also hold a string, if the form has
-  > been submitted.
-  >
-  > This is particularly noticeable when using `inputs_for`. Accessing the `.value`
-  > of a nested field may either return a struct, a changeset, or raw parameters
-  > sent by the client (when using `drop_param`). This makes the `form[:field].value`
-  > impractical for deriving or computing other properties.
-  >
-  > The correct way to approach this problem is by computing any property either in
-  > your LiveViews, by traversing the relevant changesets and data structures, or by
-  > moving the logic to the `Ecto.Changeset` itself.
-  >
-  > As an example, imagine you are building a time tracking application where:
-  >
-  > - users enter the total work time for a day
-  > - individual activities are tracked as embeds
-  > - the sum of all activities should match the total time
-  > - the form should display the remaining time
-  >
-  > Instead of trying to calculate the remaining time in your template by
-  > doing something like `calculate_remaining(@form)` and accessing
-  > `form[:activities].value`, calculate the remaining time based
-  > on the changeset in your `handle_event` instead:
-  >
-  > ```elixir
-  > def handle_event("validate", %{"tracked_day" => params}, socket) do
-  >   changeset = TrackedDay.changeset(socket.assigns.tracked_day, params)
-  >   remaining = calculate_remaining(changeset)
-  >   {:noreply, assign(socket, form: to_form(changeset, action: :validate), remaining: remaining)}
-  > end
-  >
-  > # Helper function to calculate remaining time
-  > defp calculate_remaining(changeset) do
-  >   total = Ecto.Changeset.get_field(changeset)
-  >   activities = Ecto.Changeset.get_embed(changeset, :activities)
-  >
-  >   Enum.reduce(activities, total, fn activity, acc ->
-  >     duration =
-  >       case activity do
-  >         %{valid?: true} = changeset -> Ecto.Changeset.get_field(changeset, :duration)
-  >         # if the activity is invalid, we don't include its duration in the calculation
-  >         _ -> 0
-  >       end
-  >
-  >     acc - length
-  >   end)
-  > end
-  > ```
-  >
-  > This logic might also be implemented directly in your schema module and, if you
-  > often need the `:remaining` value, you could also add it as a `:virtual` field to
-  > your schema and run the calculation when validating the changeset:
-  >
-  > ```elixir
-  > def changeset(tracked_day, attrs) do
-  >   tracked_day
-  >   |> cast(attrs, [:total_duration])
-  >   |> cast_embed(:activities)
-  >   |> validate_required([:total_duration])
-  >   |> validate_number(:total_duration, greater_than: 0)
-  >   |> validate_and_put_remaining_time()
-  > end
-  >
-  > defp validate_and_put_remaining_time(changeset) do
-  >   remaining = calculate_remaining(changeset)
-  >   put_change(changeset, :remaining, remaining)
-  > end
-  > ```
-  >
-  > By using this approach, you can safely render the remaining time in your template
-  > using `@form[:remaining].value`, avoiding the pitfalls of directly accessing complex field values.
   """
   @doc type: :component
   attr.(:field, Phoenix.HTML.FormField,
@@ -2709,11 +2520,9 @@ defmodule Phoenix.Component do
   @doc """
   Generates a link to a given route.
 
-  It is typically used with one of the three attributes:
-
-    * `patch` - on click, it patches the current LiveView with the given path
-    * `navigate` - on click, it navigates to a new LiveView at the given path
-    * `href` - on click, it performs traditional browser navigation (as any `<a>` tag)
+  To navigate across pages, using traditional browser navigation, use
+  the `href` attribute. To patch the current LiveView or navigate
+  across LiveViews, use `patch` and `navigate` respectively.
 
   [INSERT LVATTRDOCS]
 
@@ -2830,13 +2639,10 @@ defmodule Phoenix.Component do
   @doc type: :component
   attr.(:navigate, :string,
     doc: """
-    Navigates to a LiveView.
-    When redirecting across LiveViews, the browser page is kept, but a new LiveView process
-    is mounted and its contents is loaded on the page. It is only possible to navigate
-    between LiveViews declared under the same router
-    [`live_session`](`Phoenix.LiveView.Router.live_session/3`).
-    When used outside of a LiveView or across live sessions, it behaves like a regular
-    browser redirect.
+    Navigates from a LiveView to a new LiveView.
+    The browser page is kept, but a new LiveView process is mounted and its content on the page
+    is reloaded. It is only possible to navigate between LiveViews declared under the same router
+    `Phoenix.LiveView.Router.live_session/3`. Otherwise, a full browser redirect is used.
     """
   )
 
@@ -2902,7 +2708,6 @@ defmodule Phoenix.Component do
       href={@navigate}
       data-phx-link="redirect"
       data-phx-link-state={if @replace, do: "replace", else: "push"}
-      phx-no-format
       {@rest}
     ><%= render_slot(@inner_block) %></a>
     """
@@ -2914,7 +2719,6 @@ defmodule Phoenix.Component do
       href={@patch}
       data-phx-link="patch"
       data-phx-link-state={if @replace, do: "replace", else: "push"}
-      phx-no-format
       {@rest}
     ><%= render_slot(@inner_block) %></a>
     """
@@ -2930,7 +2734,6 @@ defmodule Phoenix.Component do
       data-method={if @method != "get", do: @method}
       data-csrf={if @method != "get", do: csrf_token(@csrf_token, @href)}
       data-to={if @method != "get", do: @href}
-      phx-no-format
       {@rest}
     ><%= render_slot(@inner_block) %></a>
     """
@@ -2995,15 +2798,15 @@ defmodule Phoenix.Component do
   ## Examples
 
   ```heex
-  <.dynamic_tag tag_name="input" name="my-input" type="text"/>
+  <.dynamic_tag name="input" type="text"/>
   ```
 
   ```html
-  <input name="my-input" type="text"/>
+  <input type="text"/>
   ```
 
   ```heex
-  <.dynamic_tag tag_name="p">content</.dynamic_tag>
+  <.dynamic_tag name="p">content</.dynamic_tag>
   ```
 
   ```html
@@ -3011,13 +2814,7 @@ defmodule Phoenix.Component do
   ```
   """
   @doc type: :component
-  attr.(:tag_name, :string, required: true, doc: "The name of the tag, such as `div`.")
-
-  attr.(:name, :string,
-    required: false,
-    doc:
-      "Deprecated: use tag_name instead. If tag_name is used, passed to the tag. Otherwise the name of the tag, such as `div`."
-  )
+  attr.(:name, :string, required: true, doc: "The name of the tag, such as `div`.")
 
   attr.(:rest, :global,
     doc: """
@@ -3027,30 +2824,8 @@ defmodule Phoenix.Component do
 
   slot.(:inner_block, [])
 
-  def dynamic_tag(%{rest: rest} = assigns) do
-    {tag_name, rest} =
-      case assigns do
-        %{tag_name: tag_name, name: name} ->
-          {tag_name, Map.put(rest, :name, name)}
-
-        %{tag_name: tag_name} ->
-          {tag_name, rest}
-
-        %{name: name} ->
-          IO.warn("""
-          Passing the tag name to `Phoenix.Component.dynamic_tag/1` using the `name` attribute is deprecated.
-
-          Instead of:
-
-              <.dynamic_tag name="p" ...>
-
-          use `tag_name` instead:
-
-              <.dynamic_tag tag_name="p" ...>
-          """)
-
-          {name, Map.delete(rest, :name)}
-      end
+  def dynamic_tag(%{name: name, rest: rest} = assigns) do
+    tag_name = to_string(name)
 
     tag =
       case Phoenix.HTML.html_escape(tag_name) do
@@ -3069,8 +2844,7 @@ defmodule Phoenix.Component do
 
     if assigns.inner_block != [] do
       ~H"""
-      <%= {:safe, [?<, @tag]} %><%= @escaped_attrs %><%= {:safe, [?>]} %><%= render_slot(@inner_block) %><%= {:safe,
-       [?<, ?/, @tag, ?>]} %>
+      <%= {:safe, [?<, @tag]} %><%= @escaped_attrs %><%= {:safe, [?>]} %><%= render_slot(@inner_block) %><%= {:safe, [?<, ?/, @tag, ?>]} %>
       """
     else
       ~H"""
@@ -3083,9 +2857,6 @@ defmodule Phoenix.Component do
   Builds a file input tag for a LiveView upload.
 
   [INSERT LVATTRDOCS]
-
-  Note the `id` attribute cannot be overwritten, but you can create a label with a `for` attribute
-  pointing to the UploadConfig `ref`.
 
   ## Drag and Drop
 
@@ -3143,9 +2914,7 @@ defmodule Phoenix.Component do
       data-phx-upload-ref={@upload.ref}
       data-phx-active-refs={join_refs(for(entry <- @upload.entries, do: entry.ref))}
       data-phx-done-refs={join_refs(for(entry <- @upload.entries, entry.done?, do: entry.ref))}
-      data-phx-preflighted-refs={
-        join_refs(for(entry <- @upload.entries, entry.preflighted?, do: entry.ref))
-      }
+      data-phx-preflighted-refs={join_refs(for(entry <- @upload.entries, entry.preflighted?, do: entry.ref))}
       data-phx-auto-upload={@upload.auto_upload?}
       {if @upload.max_entries > 1, do: Map.put(@rest, :multiple, true), else: @rest}
     />
@@ -3202,9 +2971,7 @@ defmodule Phoenix.Component do
       data-phx-entry-ref={@entry.ref}
       data-phx-hook="Phoenix.LiveImgPreview"
       data-phx-update="ignore"
-      phx-no-format
-      {@rest}
-    />
+      {@rest} />
     """
   end
 
@@ -3244,7 +3011,7 @@ defmodule Phoenix.Component do
         render_slot(@inner_block, item)
       end
     %><% end %>
-    """noformat
+    """
   end
 
   @doc """

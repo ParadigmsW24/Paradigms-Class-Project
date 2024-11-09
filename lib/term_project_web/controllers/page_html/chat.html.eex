@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat</title>
+  <script src="/js/phoenix.js"></script> <!-- Ensure phoenix.js is correctly loaded -->
+</head>
+<body>
+  <div id="messages"></div>
+  <input type="text" id="messageInput" placeholder="Type your message">
+  <button onclick="sendMessage()">Send</button>
+
+  <script>
+    let socket = new Phoenix.Socket("/socket", {params: {userToken: "123"}});
+
+    socket.connect();
+
+    let channel = socket.channel("game:chat", {});
+
+    channel.join()
+      .receive("ok", resp => { console.log("Joined successfully", resp); })
+      .receive("error", resp => { console.error("Unable to join", resp); });
+
+    channel.on("new_msg", payload => {
+      let messages = document.getElementById("messages");
+      let messageDiv = document.createElement("div");
+      messageDiv.textContent = payload.message;
+      messages.appendChild(messageDiv);
+    });
+
+    function sendMessage() {
+      let input = document.getElementById("messageInput");
+      let message = input.value;
+      channel.push("send_msg", {message: message})
+        .receive("ok", resp => { console.log("Message sent successfully:", resp); })
+        .receive("error", resp => { console.error("Failed to send message:", resp); });
+
+      input.value = ''; // Clear the input after sending
+    }
+
+    // Initialize the WebSocket connection when the page loads
+    document.addEventListener("DOMContentLoaded", function() {
+      socket.connect();
+    });
+  </script>
+</body>
+</html>

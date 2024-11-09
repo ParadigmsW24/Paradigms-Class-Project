@@ -1,5 +1,5 @@
 {application,phoenix_live_view,
-    [{config_mtime,1730839974},
+    [{config_mtime,1731182812},
      {compile_env,
          [{phoenix_live_view,[enable_expensive_runtime_checks],{ok,true}}]},
      {optional_applications,[phoenix_view,jason,floki]},
@@ -38,7 +38,6 @@
           'Elixir.Phoenix.LiveView.Lifecycle',
           'Elixir.Phoenix.LiveView.LiveStream',
           'Elixir.Phoenix.LiveView.Logger','Elixir.Phoenix.LiveView.Plug',
-          'Elixir.Phoenix.LiveView.ReloadError',
           'Elixir.Phoenix.LiveView.Rendered',
           'Elixir.Phoenix.LiveView.Renderer','Elixir.Phoenix.LiveView.Route',
           'Elixir.Phoenix.LiveView.Router','Elixir.Phoenix.LiveView.Session',
@@ -63,5 +62,5 @@
           'Elixir.Phoenix.LiveViewTest.View',
           'Elixir.String.Chars.Phoenix.LiveComponent.CID']},
      {registered,[]},
-     {vsn,"1.0.0-rc.7"},
+     {vsn,"0.20.17"},
      {mod,{'Elixir.Phoenix.LiveView.Application',[]}}]}.

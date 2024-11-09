@@ -2,7 +2,6 @@ defmodule TermProjectWeb.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  channel "game:*", TermProjectWeb.GameChannel
   channel "game:chat", TermProjectWeb.GameChatChannel # Add game chat channel
 
   # Transports

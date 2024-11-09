@@ -17,7 +17,7 @@ defmodule TermProjectWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt chat_test.html)
+  def static_paths, do: ~w(assets fonts images js favicon.ico robots.txt chat_test.html)
 
   def router do
     quote do
@@ -46,6 +46,16 @@ defmodule TermProjectWeb do
       import TermProjectWeb.Gettext
 
       unquote(verified_routes())
+    end
+  end
+
+  def view do
+    quote do
+      use Phoenix.View,
+        root: "lib/term_project_web/templates",
+        namespace: TermProjectWeb
+
+      import Phoenix.HTML
     end
   end
 

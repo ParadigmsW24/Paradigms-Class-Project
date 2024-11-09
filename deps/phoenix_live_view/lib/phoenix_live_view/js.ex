@@ -151,10 +151,7 @@ defmodule Phoenix.LiveView.JS do
 
     * `:target` - A selector or component ID to push to. This value will
       overwrite any `phx-target` attribute present on the element.
-    * `:loading` - A selector to apply the phx loading classes to,
-      such as `phx-click-loading` in case the event was triggered by
-      `phx-click`. The element will be locked from server updates
-      until the push is acknowledged by the server.
+    * `:loading` - A selector to apply the phx loading classes to.
     * `:page_loading` - Boolean to trigger the phx:page-loading-start and
       phx:page-loading-stop events for this push. Defaults to `false`.
     * `:value` - A map of values to send to the server. These values will be
@@ -288,7 +285,6 @@ defmodule Phoenix.LiveView.JS do
       Defaults to #{@default_transition_time}.
     * `:display` - An optional display value to set when toggling in. Defaults
       to `"block"`.
-    * `:blocking` - A boolean flag to block the UI during the transition. Defaults `true`.
 
   When the toggle is complete on the client, a `phx:show-start` or `phx:hide-start`, and
   `phx:show-end` or `phx:hide-end` event will be dispatched to the toggled elements.
@@ -311,7 +307,7 @@ defmodule Phoenix.LiveView.JS do
 
   @doc "See `toggle/1`."
   def toggle(js, opts) when is_list(opts) do
-    opts = validate_keys(opts, :toggle, [:to, :in, :out, :display, :time, :blocking])
+    opts = validate_keys(opts, :toggle, [:to, :in, :out, :display, :time])
     in_classes = transition_class_names(opts[:in])
     out_classes = transition_class_names(opts[:out])
     time = opts[:time]
@@ -321,8 +317,7 @@ defmodule Phoenix.LiveView.JS do
       display: opts[:display],
       ins: in_classes,
       outs: out_classes,
-      time: time,
-      blocking: opts[:blocking]
+      time: time
     )
   end
 
@@ -339,7 +334,6 @@ defmodule Phoenix.LiveView.JS do
       `{"ease-out duration-300", "opacity-0", "opacity-100"}`
     * `:time` - The time in milliseconds to apply the transition from `:transition`.
       Defaults to #{@default_transition_time}.
-    * `:blocking` - A boolean flag to block the UI during the transition. Defaults `true`.
     * `:display` - An optional display value to set when showing. Defaults to `"block"`.
 
   During the process, the following events will be dispatched to the shown elements:
@@ -365,7 +359,7 @@ defmodule Phoenix.LiveView.JS do
 
   @doc "See `show/1`."
   def show(js, opts) when is_list(opts) do
-    opts = validate_keys(opts, :show, [:to, :transition, :display, :time, :blocking])
+    opts = validate_keys(opts, :show, [:to, :transition, :display, :time])
     transition = transition_class_names(opts[:transition])
     time = opts[:time]
 
@@ -373,8 +367,7 @@ defmodule Phoenix.LiveView.JS do
       to: opts[:to],
       display: opts[:display],
       transition: transition,
-      time: time,
-      blocking: opts[:blocking]
+      time: time
     )
   end
 
@@ -391,7 +384,6 @@ defmodule Phoenix.LiveView.JS do
       `{"ease-out duration-300", "opacity-100", "opacity-0"}`
     * `:time` - The time in milliseconds to apply the transition from `:transition`.
       Defaults to #{@default_transition_time}.
-    * `:blocking` - A boolean flag to block the UI during the transition. Defaults `true`.
 
   During the process, the following events will be dispatched to the hidden elements:
 
@@ -416,15 +408,14 @@ defmodule Phoenix.LiveView.JS do
 
   @doc "See `hide/1`."
   def hide(js, opts) when is_list(opts) do
-    opts = validate_keys(opts, :hide, [:to, :transition, :time, :blocking])
+    opts = validate_keys(opts, :hide, [:to, :transition, :time])
     transition = transition_class_names(opts[:transition])
     time = opts[:time]
 
     put_op(js, "hide",
       to: opts[:to],
       transition: transition,
-      time: time,
-      blocking: opts[:blocking]
+      time: time
     )
   end
 
@@ -443,7 +434,6 @@ defmodule Phoenix.LiveView.JS do
       `{"ease-out duration-300", "opacity-0", "opacity-100"}`
     * `:time` - The time in milliseconds to apply the transition from `:transition`.
       Defaults to #{@default_transition_time}.
-    * `:blocking` - A boolean flag to block the UI during the transition. Defaults `true`.
 
   ## Examples
 
@@ -465,15 +455,14 @@ defmodule Phoenix.LiveView.JS do
 
   @doc "See `add_class/1`."
   def add_class(%JS{} = js, names, opts) when is_binary(names) and is_list(opts) do
-    opts = validate_keys(opts, :add_class, [:to, :transition, :time, :blocking])
+    opts = validate_keys(opts, :add_class, [:to, :transition, :time])
     time = opts[:time]
 
     put_op(js, "add_class",
       to: opts[:to],
       names: class_names(names),
       transition: transition_class_names(opts[:transition]),
-      time: time,
-      blocking: opts[:blocking]
+      time: time
     )
   end
 
@@ -492,7 +481,6 @@ defmodule Phoenix.LiveView.JS do
       `{"ease-out duration-300", "opacity-0", "opacity-100"}`
     * `:time` - The time in milliseconds to apply the transition from `:transition`.
       Defaults to #{@default_transition_time}.
-    * `:blocking` - A boolean flag to block the UI during the transition. Defaults `true`.
 
   ## Examples
 
@@ -512,15 +500,14 @@ defmodule Phoenix.LiveView.JS do
   end
 
   def toggle_class(%JS{} = js, names, opts) when is_binary(names) and is_list(opts) do
-    opts = validate_keys(opts, :toggle_class, [:to, :transition, :time, :blocking])
+    opts = validate_keys(opts, :toggle_class, [:to, :transition, :time])
     time = opts[:time]
 
     put_op(js, "toggle_class",
       to: opts[:to],
       names: class_names(names),
       transition: transition_class_names(opts[:transition]),
-      time: time,
-      blocking: opts[:blocking]
+      time: time
     )
   end
 
@@ -539,7 +526,6 @@ defmodule Phoenix.LiveView.JS do
       `{"ease-out duration-300", "opacity-0", "opacity-100"}`
     * `:time` - The time in milliseconds to apply the transition from `:transition`.
       Defaults to #{@default_transition_time}.
-    * `:blocking` - A boolean flag to block the UI during the transition. Defaults `true`.
 
   ## Examples
 
@@ -561,15 +547,14 @@ defmodule Phoenix.LiveView.JS do
 
   @doc "See `remove_class/1`."
   def remove_class(%JS{} = js, names, opts) when is_binary(names) and is_list(opts) do
-    opts = validate_keys(opts, :remove_class, [:to, :transition, :time, :blocking])
+    opts = validate_keys(opts, :remove_class, [:to, :transition, :time])
     time = opts[:time]
 
     put_op(js, "remove_class",
       to: opts[:to],
       names: class_names(names),
       transition: transition_class_names(opts[:transition]),
-      time: time,
-      blocking: opts[:blocking]
+      time: time
     )
   end
 
@@ -590,16 +575,11 @@ defmodule Phoenix.LiveView.JS do
       Defaults to the interacted element.
     * `:time` - The time in milliseconds to apply the transition from `:transition`.
       Defaults to #{@default_transition_time}.
-    * `:blocking` - A boolean flag to block the UI during the transition. Defaults `true`.
 
   ## Examples
 
       <div id="item">My Item</div>
       <button phx-click={JS.transition("shake", to: "#item")}>Shake!</button>
-
-      <div phx-mounted={JS.transition({"ease-out duration-300", "opacity-0", "opacity-100"}, time: 300)}>
-         duration-300 milliseconds matches time: 300 milliseconds
-      <div>
   """
   def transition(transition) when is_binary(transition) or is_tuple(transition) do
     transition(%JS{}, transition, [])
@@ -618,14 +598,13 @@ defmodule Phoenix.LiveView.JS do
   @doc "See `transition/1`."
   def transition(%JS{} = js, transition, opts)
       when (is_binary(transition) or is_tuple(transition)) and is_list(opts) do
-    opts = validate_keys(opts, :transition, [:to, :time, :blocking])
+    opts = validate_keys(opts, :transition, [:to, :time])
     time = opts[:time]
 
     put_op(js, "transition",
       time: time,
       to: opts[:to],
-      transition: transition_class_names(transition),
-      blocking: opts[:blocking]
+      transition: transition_class_names(transition)
     )
   end
 
@@ -911,11 +890,6 @@ defmodule Phoenix.LiveView.JS do
     put_op(js, "exec", attr: attr, to: opts[:to])
   end
 
-  @doc """
-  Combines two JS commands, appending the second to the first.
-  """
-  def concat(%JS{ops: first}, %JS{ops: second}), do: %JS{ops: first ++ second}
-
   defp put_op(%JS{ops: ops} = js, kind, args) do
     args = drop_nil_values(args)
     struct!(js, ops: ops ++ [[kind, args]])
@@ -943,32 +917,16 @@ defmodule Phoenix.LiveView.JS do
   end
 
   defp validate_keys(opts, kind, allowed_keys) do
-    Enum.map(opts, fn
-      {:to, {scope, _selector}} when scope not in [:closest, :inner, :document] ->
+    for key <- Keyword.keys(opts) do
+      if key not in allowed_keys do
         raise ArgumentError, """
-        invalid scope for :to option in #{kind}.
-        Valid scopes are :closest, :inner, :document. Got: #{inspect(scope)}
+        invalid option for #{kind}
+        Expected keys to be one of #{inspect(allowed_keys)}, got: #{inspect(key)}
         """
+      end
+    end
 
-      {:to, {:document, selector}} ->
-        {:to, selector}
-
-      {:to, {scope, selector}} ->
-        {:to, %{scope => selector}}
-
-      {:to, selector} when is_binary(selector) ->
-        {:to, selector}
-
-      {key, val} ->
-        if key not in allowed_keys do
-          raise ArgumentError, """
-          invalid option for #{kind}
-          Expected keys to be one of #{inspect(allowed_keys)}, got: #{inspect(key)}
-          """
-        end
-
-        {key, val}
-    end)
+    opts
   end
 
   defp put_value(opts) do

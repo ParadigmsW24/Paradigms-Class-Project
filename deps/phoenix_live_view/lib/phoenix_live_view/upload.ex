@@ -257,7 +257,7 @@ defmodule Phoenix.LiveView.Upload do
   """
   def consume_uploaded_entry(%Socket{} = socket, %UploadEntry{} = entry, func)
       when is_function(func, 1) do
-    if !entry.done?,
+    unless entry.done?,
       do: raise(ArgumentError, "cannot consume uploaded files when entries are still in progress")
 
     conf = Map.fetch!(socket.assigns[:uploads], entry.upload_config)
@@ -341,11 +341,10 @@ defmodule Phoenix.LiveView.Upload do
     %UploadConfig{} = conf = Map.fetch!(socket.assigns.uploads, name)
 
     # don't send more than max_entries preflight responses
-    refs =
-      for {entry, i} <- Enum.with_index(conf.entries),
-          entry.ref in refs,
-          i < conf.max_entries && not entry.preflighted?,
-          do: entry.ref
+    refs = for {entry, i} <- Enum.with_index(conf.entries),
+      entry.ref in refs,
+      i < conf.max_entries && not entry.preflighted?,
+      do: entry.ref
 
     client_meta = %{
       max_file_size: conf.max_file_size,
