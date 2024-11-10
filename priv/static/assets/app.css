@@ -1629,6 +1629,8 @@ select {
 
 /* This file is for your main application CSS */
 
+/* chatstyle.css */
+
 .hover\:cursor-pointer:hover {
   cursor: pointer;
 }

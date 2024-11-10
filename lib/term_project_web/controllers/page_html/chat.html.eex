@@ -3,45 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <title>Chat</title>
+  <link rel="stylesheet" href="/css/chatstyles.css"> <!-- Ensure your CSS file is linked correctly -->
   <script src="/js/phoenix.js"></script> <!-- Ensure phoenix.js is correctly loaded -->
 </head>
 <body>
-  <div id="messages"></div>
-  <input type="text" id="messageInput" placeholder="Type your message">
-  <button onclick="sendMessage()">Send</button>
+  <div id="chat-container">
+    <div id="messages" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; padding: 5px;"></div>
+    <form id="message-form">
+      <input type="text" id="messageInput" placeholder="Type your message here..." autocomplete="off">
+      <button type="submit">Send</button>
+    </form>
+  </div>
 
   <script>
-    let socket = new Phoenix.Socket("/socket", {params: {userToken: "123"}});
+    let socket = null;
+    let channel = null;
 
-    socket.connect();
+    function connectWebSocket() {
+      socket = new Phoenix.Socket("ws://localhost:4000/socket", {params: {userToken: "123"}});
+      socket.connect();
 
-    let channel = socket.channel("game:chat", {});
+      channel = socket.channel("game:chat", {});
+      channel.join()
+        .receive("ok", resp => { console.log("Joined successfully", resp) })
+        .receive("error", resp => { console.error("Unable to join", resp) });
 
-    channel.join()
-      .receive("ok", resp => { console.log("Joined successfully", resp); })
-      .receive("error", resp => { console.error("Unable to join", resp); });
-
-    channel.on("new_msg", payload => {
-      let messages = document.getElementById("messages");
-      let messageDiv = document.createElement("div");
-      messageDiv.textContent = payload.message;
-      messages.appendChild(messageDiv);
-    });
-
-    function sendMessage() {
-      let input = document.getElementById("messageInput");
-      let message = input.value;
-      channel.push("send_msg", {message: message})
-        .receive("ok", resp => { console.log("Message sent successfully:", resp); })
-        .receive("error", resp => { console.error("Failed to send message:", resp); });
-
-      input.value = ''; // Clear the input after sending
+      channel.on("new_msg", payload => {
+          let messages = document.getElementById("messages");
+          let messageDiv = document.createElement("div");
+          messageDiv.textContent = payload.message;
+          messages.appendChild(messageDiv);
+          messages.scrollTop = messages.scrollHeight;
+      });
     }
 
-    // Initialize the WebSocket connection when the page loads
-    document.addEventListener("DOMContentLoaded", function() {
-      socket.connect();
+    function sendMessage(message) {
+      channel.push("send_msg", {message: message})
+        .receive("ok", resp => { console.log("Message sent successfully", resp); })
+        .receive("error", resp => { console.error("Failed to send message", resp); });
+    }
+
+    document.getElementById("message-form").addEventListener("submit", function(event) {
+      event.preventDefault();
+      let messageInput = document.getElementById("messageInput");
+      let message = messageInput.value;
+      if (message.trim().length > 0) {
+        sendMessage(message);
+        messageInput.value = ''; // Clear the input after sending
+      }
     });
+
+    // Initialize the WebSocket connection
+    connectWebSocket();
   </script>
 </body>
 </html>
