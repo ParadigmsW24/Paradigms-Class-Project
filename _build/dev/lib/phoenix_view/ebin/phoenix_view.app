@@ -1,5 +1,5 @@
 {application,phoenix_view,
-             [{config_mtime,1731182890},
+             [{config_mtime,1731197349},
               {optional_applications,[phoenix_html]},
               {applications,[kernel,stdlib,elixir,eex,phoenix_html,
                              phoenix_template]},
