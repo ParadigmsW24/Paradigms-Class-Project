@@ -1,5 +1,5 @@
 {application,mint,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839974},
               {optional_applications,[castore]},
               {applications,[kernel,stdlib,elixir,logger,ssl,castore,hpax]},
               {description,"Small and composable HTTP client."},

@@ -1,5 +1,5 @@
 {application,phoenix_ecto,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839973},
               {optional_applications,[phoenix_html,postgrex]},
               {applications,[kernel,stdlib,elixir,logger,phoenix_html,ecto,
                              plug,postgrex]},

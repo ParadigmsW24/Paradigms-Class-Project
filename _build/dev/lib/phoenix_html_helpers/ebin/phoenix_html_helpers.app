@@ -1,5 +1,5 @@
 {application,phoenix_html_helpers,
-    [{config_mtime,1731459678},
+    [{config_mtime,1731622954},
      {optional_applications,[plug]},
      {applications,[kernel,stdlib,elixir,logger,phoenix_html,plug]},
      {description,

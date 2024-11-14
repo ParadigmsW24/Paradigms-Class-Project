@@ -3,7 +3,7 @@ import Config
 # Configure your database
 config :term_project, TermProject.Repo,
   username: "postgres",
-  password: "123456z",
+  password: "abcd1234",
   hostname: "localhost",
   database: "term_project_dev",
   stacktrace: true,
@@ -87,7 +87,7 @@ config :swoosh, :api_client, false
 # Configure your database
 config :term_project, TermProject.Repo,
   username: "postgres",
-  password: "123456z",
+  password: "abcd1234",
   hostname: "localhost",
   database: "term_project_dev",
   stacktrace: true,

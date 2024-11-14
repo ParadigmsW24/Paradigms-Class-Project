@@ -1,5 +1,5 @@
 {application,jason,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839974},
               {optional_applications,[decimal]},
               {applications,[kernel,stdlib,elixir,decimal]},
               {description,"A blazing fast JSON parser and generator in pure Elixir.\n"},

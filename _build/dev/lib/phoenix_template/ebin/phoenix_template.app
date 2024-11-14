@@ -1,5 +1,5 @@
 {application,phoenix_template,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839974},
               {optional_applications,[phoenix_html]},
               {applications,[kernel,stdlib,elixir,eex,phoenix_html]},
               {description,"Template rendering for Phoenix"},

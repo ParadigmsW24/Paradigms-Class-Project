@@ -1,5 +1,5 @@
 {application,file_system,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839974},
               {optional_applications,[]},
               {applications,[kernel,stdlib,elixir,logger]},
               {description,"An Elixir file system change watcher wrapper based on FS, the native file\nsystem listener.\n"},

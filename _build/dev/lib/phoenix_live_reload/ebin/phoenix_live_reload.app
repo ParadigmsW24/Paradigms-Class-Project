@@ -1,5 +1,5 @@
 {application,phoenix_live_reload,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839973},
               {optional_applications,[]},
               {applications,[kernel,stdlib,elixir,logger,phoenix,file_system]},
               {description,"Provides live-reload functionality for Phoenix"},

@@ -1,5 +1,5 @@
 {application,esbuild,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839974},
               {optional_applications,[inets,ssl]},
               {applications,[kernel,stdlib,elixir,logger,inets,ssl,castore,
                              jason]},

@@ -1,5 +1,5 @@
 {application,ecto,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839974},
               {optional_applications,[jason]},
               {applications,[kernel,stdlib,elixir,logger,crypto,eex,telemetry,
                              decimal,jason]},

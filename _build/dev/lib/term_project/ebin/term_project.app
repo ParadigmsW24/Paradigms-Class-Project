@@ -1,5 +1,5 @@
 {application,term_project,
-    [{config_mtime,1731459684},
+    [{config_mtime,1731625435},
      {compile_env,
          [{term_project,['Elixir.TermProjectWeb.Gettext'],error},
           {term_project,[dev_routes],{ok,true}}]},

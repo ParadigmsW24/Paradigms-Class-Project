@@ -1,5 +1,5 @@
 {application,hpax,
-             [{config_mtime,1731438557},
+             [{config_mtime,1730839974},
               {optional_applications,[]},
               {applications,[kernel,stdlib,elixir]},
               {description,"Implementation of the HPACK protocol (RFC 7541) for Elixir"},
