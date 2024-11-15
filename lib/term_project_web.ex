@@ -17,7 +17,7 @@ defmodule TermProjectWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts js images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets fonts js css images favicon.ico robots.txt)
 
   def router do
     quote do
