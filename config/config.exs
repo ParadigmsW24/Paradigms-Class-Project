@@ -14,6 +14,32 @@
 # General application configuration
 import Config
 
+# Define a helper module to load .env variables
+defmodule EnvLoader do
+  def load_env(file \\ ".env") do
+    case File.read(file) do
+      {:ok, content} ->
+        content
+        |> String.split("\n", trim: true)
+        |> Enum.each(fn line ->
+          case String.split(line, "=", parts: 2) do
+            [key, value] ->
+              System.put_env(String.trim(key), String.trim(value))
+              IO.inspect({key, value}, label: "Loaded ENV")
+
+            _ ->
+              :ok
+          end
+        end)
+
+      {:error, reason} ->
+        IO.puts("Failed to load .env file: #{reason}")
+    end
+  end
+end
+
+EnvLoader.load_env()
+
 config :term_project,
   ecto_repos: [TermProject.Repo],
   generators: [timestamp_type: :utc_datetime]

@@ -3,3 +3,4 @@
 /deps
 /priv/static/assets/app.css
 /priv/static/assets/app.js
+.env
