@@ -1,4 +1,50 @@
-<div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat</title>
+  <link rel="stylesheet" href="/css/chatstyles.css"> <!-- Ensure your CSS file is linked correctly -->
+  <script type="importmap">
+{
+    "imports": {
+        "picmo": "https://unpkg.com/picmo@5.8.5/dist/index.js",
+        "@picmo/popup-picker": "https://unpkg.com/@picmo/popup-picker@5.8.5/dist/index.js"
+    }
+}
+  </script>
+  <script type="module">
+    import { createPicker } from 'picmo';
+document.addEventListener('DOMContentLoaded', function () {
+        const rootElement = document.querySelector('#picker');
+        const emojiButton = document.getElementById('emoji-button');
+
+        // Initialize the picker and hide it initially
+        const picker = createPicker({
+            rootElement,  // Ensure this is an empty div where the picker should appear
+            autoHide: false // Optional based on whether you want the picker to hide automatically
+        });
+        rootElement.style.display = 'none'; // Hide the picker initially
+
+        // Event listener for emoji selection
+        picker.addEventListener('emoji:select', event => {
+            const messageInput = document.getElementById('messageInput');
+            messageInput.value += event.emoji; // Append selected emoji to the input field
+        });
+
+        // Toggle the visibility of the picker when the button is clicked
+        emojiButton.addEventListener('click', () => {
+            if (rootElement.style.display === 'none') {
+                rootElement.style.display = 'block';
+            } else {
+                rootElement.style.display = 'none';
+            }
+        });//connectWebSocket();
+  });
+</script>
+  <script src="/js/phoenix.js"></script> <!-- Ensure phoenix.js is correctly loaded -->
+</head>
+<body>
+  <div>
   <h1>Lobby</h1>
 
   <h2>Create Lobby</h2>
@@ -20,3 +66,58 @@
     <% end %>
   </ul>
 </div>
+  <div id="chat-container">
+    <div id="messages" style="height: 300px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; padding: 5px;"></div>
+    <form id="message-form">
+      <input type="text" id="messageInput" placeholder="Type your message here..." autocomplete="off">
+      <button type="button" id="emoji-button">😊</button> <!-- Emoji trigger button -->
+      <button type="submit">Send</button>
+    </form>
+    <div id="picker" style="position: absolute; bottom: 50px;"></div>
+  </div>
+
+  <script>
+    let socket = null;
+    let channel = null;
+
+    document.getElementById("message-form").addEventListener("submit", function(event) {
+      event.preventDefault();
+      let messageInput = document.getElementById("messageInput");
+      let message = messageInput.value;
+      if (message.trim().length > 0) {
+        sendMessage(message);
+        messageInput.value = ''; // Clear the input after sending
+      }
+    });
+
+    function sendMessage(message) {
+      if (channel) {
+        channel.push("send_msg", {message: message})
+          .receive("ok", resp => { console.log("Message sent successfully", resp); })
+          .receive("error", resp => { console.error("Failed to send message", resp); });
+      }
+    }
+
+    function connectWebSocket() {
+      socket = new Phoenix.Socket("ws://localhost:4000/socket", {params: {userToken: "123"}});
+      socket.connect();
+
+      channel = socket.channel("game:chat", {});
+      channel.join()
+        .receive("ok", resp => { console.log("Joined successfully", resp) })
+        .receive("error", resp => { console.error("Unable to join", resp) });
+
+      channel.on("new_msg", payload => {
+          let messages = document.getElementById("messages");
+          let messageDiv = document.createElement("div");
+          messageDiv.textContent = payload.message;
+          messages.appendChild(messageDiv);
+          messages.scrollTop = messages.scrollHeight;
+      });
+    }
+
+    connectWebSocket();
+  </script>
+</body>
+</html>
+

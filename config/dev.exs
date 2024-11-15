@@ -142,7 +142,7 @@ config :term_project, TermProjectWeb.Endpoint,
     patterns: [
       ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/term_project_web/(controllers|live|components)/.*(ex|heex)$"
+      ~r"lib/term_project_web/(controllers|live|components)/.*(ex|heex|eex)$"
     ]
   ]
 
