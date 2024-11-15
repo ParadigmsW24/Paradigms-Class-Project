@@ -11,8 +11,8 @@ const GameRenderer = {
       scene: {
         preload: this.preload,
         create: this.create,
-        update: this.update
-      }
+        update: this.update,
+      },
     };
 
     // Initialize the Phaser game instance
@@ -23,12 +23,14 @@ const GameRenderer = {
     // Load assets
     this.load.image("background", "path/to/background.png");
     this.load.image("soldier", "path/to/soldier.png");
+    this.load.image("archer", "path/to/archer.png");
+    this.load.image("cavalry", "path/to/cavalry.png");
   },
 
   create() {
     // Add the background
     this.add.image(400, 300, "background"); // Centered background
-    this.soldiers = this.add.group(); // Group for soldier units
+    this.units = this.add.group(); // Group for all units
   },
 
   update() {
@@ -36,17 +38,31 @@ const GameRenderer = {
   },
 
   render(state) {
-    // Clear existing soldiers
-    this.soldiers.clear(true, true);
+    // Clear existing units
+    this.units.clear(true, true);
 
-    // Render soldiers based on game state
-    state.units.forEach(unit => {
-      if (unit.type === "soldier") {
-        const soldier = this.soldiers.create(unit.x, unit.y, "soldier");
-        soldier.setOrigin(0.5, 0.5);
+    // Render units based on game state
+    state.units.forEach((unit) => {
+      let spriteKey;
+      switch (unit.type) {
+        case "soldier":
+          spriteKey = "soldier";
+          break;
+        case "archer":
+          spriteKey = "archer";
+          break;
+        case "cavalry":
+          spriteKey = "cavalry";
+          break;
+        default:
+          console.warn(`Unknown unit type: ${unit.type}`);
+          return;
       }
+
+      const renderedUnit = this.units.create(unit.x, unit.y, spriteKey);
+      renderedUnit.setOrigin(0.5, 0.5);
     });
-  }
+  },
 };
 
 // Initialize Phaser when the module loads
