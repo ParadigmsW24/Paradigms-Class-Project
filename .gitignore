@@ -1,22 +1,3 @@
-# App artifacts
-/_build/
-/deps/
-*.ez
-
-# Generated on crash by the VM
-erl_crash.dump
-
-# Static artifacts
-/assets/node_modules/
-/priv/static/
-
-# Database files
-*.db
-*.db-*
-
-# Environment files
-.env
-.env.*
-
-# IDE/Editor files
+/_build
 /.elixir_ls
+/deps
