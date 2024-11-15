@@ -1,3 +1,5 @@
 /_build
 /.elixir_ls
 /deps
+/priv/assets/static/app.cs
+/priv/assets/static/app.js
