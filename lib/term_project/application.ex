@@ -6,7 +6,7 @@ defmodule TermProject.Application do
   use Application
 
   def start(_type, _args) do
-    :ets.new(Game.Table, [:named_table, :public, :set, {:read_concurrency, true}])
+    :ets.new(:game_table, [:named_table, :public, :set, {:read_concurrency, true}])
 
     children = [
       # Start the Ecto repository
