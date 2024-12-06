@@ -24,11 +24,11 @@ defmodule TermProject.Server.GameServer do
   @impl true
   def handle_call({:request_private_lobby, username, lobby_id}, _from, state) do
     # Attempt to find the private lobby by the given lobby_id (password).
-    case :ets.lookup(:Game.Table, lobby_id) do
+    case :ets.lookup(:game_table, lobby_id) do
       [] ->
         # Lobby doesn't exist, create a new one
         new_lobby = %{type: :private, players: [username], status: :waiting, id: lobby_id}
-        :ets.insert(:Game.Table, {lobby_id, new_lobby})
+        :ets.insert(:game_table, {lobby_id, new_lobby})
         {:reply, {:ok, {lobby_id, new_lobby}}, state}
 
       [{^lobby_id, existing_lobby}] ->
@@ -44,7 +44,7 @@ defmodule TermProject.Server.GameServer do
                 updated_lobby
               end
 
-            :ets.insert(:Game.Table, {lobby_id, updated_lobby})
+            :ets.insert(:game_table, {lobby_id, updated_lobby})
             {:reply, {:ok, {lobby_id, updated_lobby}}, state}
 
           true ->
@@ -68,14 +68,14 @@ defmodule TermProject.Server.GameServer do
             updated_lobby
           end
 
-        :ets.insert(:Game.Table, {public_lobby_id, updated_lobby})
+        :ets.insert(:game_table, {public_lobby_id, updated_lobby})
         {:reply, {:ok, {public_lobby_id, updated_lobby}}, state}
 
       :no_lobby_found ->
         # Create a new public lobby
         new_lobby_id = generate_lobby_id()
         new_lobby = %{type: :public, players: [username], status: :waiting, id: new_lobby_id}
-        :ets.insert(:Game.Table, {new_lobby_id, new_lobby})
+        :ets.insert(:game_table, {new_lobby_id, new_lobby})
         {:reply, {:ok, {new_lobby_id, new_lobby}}, state}
     end
   end
@@ -98,7 +98,7 @@ defmodule TermProject.Server.GameServer do
         end
       end,
       :no_lobby_found,
-      :Game.Table
+      :game_table
     )
   end
 
