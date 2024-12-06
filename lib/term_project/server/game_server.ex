@@ -10,14 +10,48 @@ defmodule TermProject.Server.GameServer do
     {:ok, {}}
   end
 
-  # If `password` is an empty string or nil, this is a public lobby request.
+  # If `password` is a non-empty string or nil, this is a private lobby request.
   def request_lobby(username, password) when is_binary(password) and password != "" do
     GenServer.call(__MODULE__, {:request_private_lobby, username, password})
   end
 
-  # If `password` is a non-empty string or nil, this is a private lobby request.
+  # If `password` is an empty string or nil, this is a public lobby request.
   def request_lobby(username, _password) do
     GenServer.call(__MODULE__, {:request_public_lobby, username})
+  end
+
+  # Handle request for joining a private lobby
+  @impl true
+  def handle_call({:request_private_lobby, username, lobby_id}, _from, state) do
+    # Attempt to find the private lobby by the given lobby_id (password).
+    case :ets.lookup(:Game.Table, lobby_id) do
+      [] ->
+        # Lobby doesn't exist, create a new one
+        new_lobby = %{type: :private, players: [username], status: :waiting, id: lobby_id}
+        :ets.insert(:Game.Table, {lobby_id, new_lobby})
+        {:reply, {:ok, {lobby_id, new_lobby}}, state}
+
+      [{^lobby_id, existing_lobby}] ->
+        # Lobby exists, check if there's room
+        cond do
+          length(existing_lobby.players) < 2 ->
+            updated_lobby = Map.update!(existing_lobby, :players, &[username | &1])
+            # If now full, update status
+            updated_lobby =
+              if length(updated_lobby.players) == 2 do
+                Map.put(updated_lobby, :status, :ready)
+              else
+                updated_lobby
+              end
+
+            :ets.insert(:Game.Table, {lobby_id, updated_lobby})
+            {:reply, {:ok, {lobby_id, updated_lobby}}, state}
+
+          true ->
+            # Lobby full
+            {:reply, {:error, :lobby_full}, state}
+        end
+    end
   end
 
   # Handle request to join a public lobby
