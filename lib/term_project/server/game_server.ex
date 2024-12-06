@@ -15,18 +15,61 @@ defmodule TermProject.Server.GameServer do
     GenServer.call(__MODULE__, {:request_private_lobby, username, password})
   end
 
-  #If `password` is a non-empty string or nil, this is a private lobby request.
+  # If `password` is a non-empty string or nil, this is a private lobby request.
   def request_lobby(username, _password) do
     GenServer.call(__MODULE__, {:request_public_lobby, username})
   end
 
-  def search_lobby() do
+  # Handle request to join a public lobby
+  def handle_call({:request_public_lobby, username}, _from, state) do
+    case find_suitable_public_lobby() do
+      {:ok, public_lobby_id, public_lobby} ->
+        # Add user to the found public lobby
+        updated_lobby = Map.update!(public_lobby, :players, &[username | &1])
+
+        updated_lobby =
+          if length(updated_lobby.players) == 2 do
+            Map.put(updated_lobby, :status, :ready)
+          else
+            updated_lobby
+          end
+
+        :ets.insert(:Game.Table, {public_lobby_id, updated_lobby})
+        {:reply, {:ok, {public_lobby_id, updated_lobby}}, state}
+
+      :no_lobby_found ->
+        # Create a new public lobby
+        new_lobby_id = generate_lobby_id()
+        new_lobby = %{type: :public, players: [username], status: :waiting, id: new_lobby_id}
+        :ets.insert(:Game.Table, {new_lobby_id, new_lobby})
+        {:reply, {:ok, {new_lobby_id, new_lobby}}, state}
+    end
   end
 
-  @spec create_lobby() :: nil
-  def create_lobby() do
+  defp find_suitable_public_lobby() do
+    # We'll search for any public lobby that is waiting and has less than 2 players.
+    :ets.foldl(
+      fn {lobby_id, lobby_state}, acc ->
+        case acc do
+          :no_lobby_found ->
+            if lobby_state.type == :public and lobby_state.status == :waiting and
+                 length(lobby_state.players) < 2 do
+              {:ok, lobby_id, lobby_state}
+            else
+              :no_lobby_found
+            end
+
+          found ->
+            found
+        end
+      end,
+      :no_lobby_found,
+      :Game.Table
+    )
   end
 
-  def remove_lobby() do
+  defp generate_lobby_id() do
+    # Simple example: random integer as ID. Consider UUID for production.
+    :rand.uniform(1_000_000)
   end
 end
