@@ -16,7 +16,9 @@ defmodule TermProject.Application do
       # Start the Endpoint (http/https)
       TermProjectWeb.Endpoint,
       # Start the Game server
-      TermProject.Server.GameServer
+      TermProject.Server.GameServer,
+      # Start the Ecto repository
+      TermProject.Repo
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html for strategies and options
