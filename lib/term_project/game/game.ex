@@ -165,10 +165,11 @@ defmodule TermProject.Game do
       {:game_state_update, game_state}
     )
   end
-end
 
-defp schedule_tick do
-  Process.send_after(self(), :tick, @tick_interval)
+  defp schedule_tick do
+    Process.send_after(self(), :tick, @tick_interval)
+  end
+
 end
 
 # defmodule TermProject.Game do
