@@ -30,7 +30,7 @@ defmodule TermProject.ResourceManager do
     workers_per_resource = div(@default_worker_count, 3)
 
     %{
-      amounts: %{wood: 200, stone: 100, iron: 20},
+      amounts: %{wood: 2000, stone: 2000, iron: 2000},
       workers: %{
         wood: workers_per_resource,
         stone: workers_per_resource,

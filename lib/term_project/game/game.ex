@@ -13,7 +13,7 @@ defmodule TermProject.Game do
 
   @doc """
   Starts a new game instance for a specific match.
-  The match_id corresponds to the lobby_id from LobbyServer.
+  The match_id corresponds to the match_id from LobbyServer.
   """
   def start_link(match_id) do
     GenServer.start_link(__MODULE__, %{match_id: match_id}, name: {:global, match_id})
@@ -32,16 +32,21 @@ defmodule TermProject.Game do
   Used by clients to sync their local state.
   """
   def get_state(match_id) do
-    GenServer.call({:global, match_id}, :get_state)
+    IO.inspect(match_id, label: "Match ID in Game.get_state")
+    state = GenServer.call({:global, match_id}, :get_state)
+    #IO.inspect(state, label: "Game State")
+    state
   end
+
 
   # GenServer Callbacks
 
   @impl true
   def init(%{match_id: match_id}) do
+    IO.puts("Starting Game server for #{match_id}")
     # Initialize game state when lobby transitions to "playing" state
     initial_state = %{
-      match_id: match_id,  # Same as lobby_id for correlation
+      match_id: match_id,  # Same as match_id for correlation
       game_state: GameState.new(),
       players: %{}  # Populated from lobby players
     }
@@ -96,5 +101,10 @@ defmodule TermProject.Game do
       "game:#{match_id}",
       {:game_state_update, game_state}
     )
+  end
+
+  def handle_info(:start_countdown, state) do
+    # Do nothing and just continue running
+    {:noreply, state}
   end
 end

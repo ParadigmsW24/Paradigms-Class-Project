@@ -65,7 +65,7 @@ defmodule TermProject.MixProject do
       {:bandit, "~> 1.5"},
       {:uuid, "~> 1.1"}, # UUID library for generating unique IDs
       {:bcrypt_elixir, "~> 3.0"},
-      {:phoenix_html_helpers, "~> 1.0"}
+      {:phoenix_html_helpers, "~> 1.0"},
     ]
   end
 

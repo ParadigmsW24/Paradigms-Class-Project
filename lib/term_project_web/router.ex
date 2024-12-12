@@ -32,7 +32,7 @@ defmodule TermProjectWeb.Router do
 
     live "/register", RegistrationLive, :new
     live "/login", LoginLive, :new
-    live "/game/:id", GameLive
+    live "/game/:id", GameLive, :show
   end
 
   scope "/auth", TermProjectWeb do

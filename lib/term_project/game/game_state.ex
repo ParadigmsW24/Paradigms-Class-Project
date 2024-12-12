@@ -57,7 +57,8 @@ defmodule TermProject.GameState do
       bases: %{
         1 => %{position: @base_positions[1], health: 1000},
         2 => %{position: @base_positions[2], health: 1000}
-      }
+      },
+      resources: ResourceManager.initialize()
     }
   end
 

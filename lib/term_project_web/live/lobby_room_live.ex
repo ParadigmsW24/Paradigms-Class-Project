@@ -159,8 +159,8 @@ defmodule TermProjectWeb.LobbyRoomLive do
   end
 
   def handle_info(:start_countdown, socket) do
-    send(self(), {:countdown, 15})
-    {:noreply, assign(socket, countdown: 15)}
+    send(self(), {:countdown, 5})
+    {:noreply, assign(socket, countdown: 5)}
   end
 
   def handle_info({:countdown, 0}, socket) do

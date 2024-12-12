@@ -145,6 +145,10 @@ defmodule TermProject.Game.LobbyServer do
         all_ready = Enum.all?(lobby.players, fn {_username, %{ready: ready}} -> ready end)
 
         if all_ready do
+          # Start the game server for this lobby
+          IO.inspect(lobby_id, label: "Lobby ID in check_all_ready before Game.start_link")
+          {:ok, _pid} = TermProject.Game.start_link(lobby_id)
+
           Phoenix.PubSub.broadcast(TermProject.PubSub, "lobby:#{lobby_id}", :start_countdown)
           :ok
         else
