@@ -17,9 +17,11 @@ defmodule TermProject.Units.Knight do
   @impl true
   def stats do
     %{
+      type: :knight,
       health: 100,
       damage: 20,
-      range: 1
+      range: 1,
+      position: %{x: 50, y: 250}
     }
   end
 

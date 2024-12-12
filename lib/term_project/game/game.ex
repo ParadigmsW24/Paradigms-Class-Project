@@ -107,4 +107,10 @@ defmodule TermProject.Game do
     # Do nothing and just continue running
     {:noreply, state}
   end
+
+  def handle_info({:game_state_update, _new_state}, state) do
+    # No action needed, just ignore
+    {:noreply, state}
+  end
+
 end

@@ -18,10 +18,12 @@ defmodule TermProject.Units.Cavalry do
   @impl true
   def stats do
     %{
+      type: :cavalry,
       health: 75,
       damage: 15,
       range: 2,
-      speed: 3
+      speed: 3,
+      position: %{x: 50, y: 250}
     }
   end
 

@@ -17,9 +17,11 @@ defmodule TermProject.Units.Archer do
   @impl true
   def stats do
     %{
+      type: :archer,
       health: 50,
       damage: 10,
-      range: 5
+      range: 5,
+      position: %{x: 50, y: 250}
     }
   end
 
