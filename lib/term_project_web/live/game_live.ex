@@ -3,18 +3,18 @@ defmodule TermProjectWeb.GameLive do
   alias TermProject.Game
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(%{"match_id" => match_id}, _session, socket) do
     if connected?(socket) do
       # Subscribe to game updates
-      Phoenix.PubSub.subscribe(TermProject.PubSub, "game")
-      :timer.send_interval(100, self(), :tick)
+      Phoenix.PubSub.subscribe(
+        TermProject.PubSub,
+        "game:#{match_id}"
+      )
     end
 
     {:ok, assign(socket,
-      player_id: 1,
-      resources: 100,
-      base_health: 1000,
-      units: []
+      match_id: match_id,
+      game_state: TermProject.Game.get_state(match_id)
     )}
   end
 
@@ -69,18 +69,10 @@ defmodule TermProjectWeb.GameLive do
   end
 
   @impl true
-  def handle_info(:tick, socket) do
-    # Move all units to the right
-    updated_units = Enum.map(socket.assigns.units, fn unit ->
-      new_x = unit.position.x + 5  # Move 5 pixels right each tick
-      %{unit | position: %{unit.position | x: new_x}}
-    end)
-
-    # Remove units that are off screen
-    remaining_units = Enum.filter(updated_units, fn unit ->
-      unit.position.x < 1200  # Game container width
-    end)
-
-    {:noreply, assign(socket, units: remaining_units)}
+  def handle_info({:game_state_update, %{state: new_state, events: events}}, socket) do
+    # Apply events and update state
+    {:noreply, assign(socket,
+      game_state: new_state
+    )}
   end
 end

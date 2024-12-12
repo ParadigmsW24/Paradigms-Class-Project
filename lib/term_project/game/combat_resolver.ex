@@ -7,16 +7,27 @@ defmodule TermProject.Game.CombatResolver do
   alias TermProject.Game.Unit
 
   def resolve(units) do
-    units
-    |> Enum.reduce([], fn unit, acc ->
+    # Return both updated units and combat events
+    {updated_units, events} = units
+    |> Enum.reduce({[], []}, fn unit, {acc_units, acc_events} ->
       case find_enemy_in_range(unit, units) do
-        nil -> [unit | acc]
+        nil ->
+          {[unit | acc_units], acc_events}
         enemy ->
           {updated_unit, updated_enemy} = engage_combat(unit, enemy)
-          [updated_unit, updated_enemy | acc]
+          event = {:combat_event, %{
+            attacker: unit.id,
+            target: enemy.id,
+            damage: unit.damage
+          }}
+          {[updated_unit, updated_enemy | acc_units], [event | acc_events]}
       end
     end)
-    |> Enum.uniq_by(& &1.id)
+    |> then(fn {units, events} ->
+      {Enum.uniq_by(units, & &1.id), events}
+    end)
+
+    {updated_units, events}
   end
 
   defp find_enemy_in_range(unit, units) do

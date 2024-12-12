@@ -64,14 +64,22 @@ defmodule TermProject.GameState do
   @doc """
   Applies an action (e.g., create unit, attack) to the game state.
   """
-  def apply_action(state, {:create_unit, unit_type}) do
-    # Dynamically create a unit using its module
-    unit_module = unit_module_for(unit_type)
-    unit_stats = unit_module.stats()
-    resources = buy_unit(state.resources, unit_type)
+  def apply_action(state, {:create_unit, unit_type, player_id}) do
+    # Add player_id to track unit ownership
+    case buy_unit(state.resources, unit_type) do
+      {:ok, updated_resources} ->
+        unit_module = unit_module_for(unit_type)
+        unit = unit_module.stats()
+        |> Map.put(:id, UUID.uuid4())
+        |> Map.put(:owner, player_id)
+        |> Map.put(:type, unit_type)
 
-    units = [%{unit_stats | type: unit_type} | state.units]
-    %{state | resources: resources, units: units}
+        units = [unit | state.units]
+        {:ok, %{state | resources: updated_resources, units: units}}
+
+      {:error, :insufficient_resources} ->
+        {:error, :insufficient_resources}
+    end
   end
 
   @doc """
