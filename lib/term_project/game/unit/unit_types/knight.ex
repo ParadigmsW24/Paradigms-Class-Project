@@ -5,10 +5,11 @@ defmodule TermProject.Units.Knight do
           type: atom(),
           health: integer(),
           damage: integer(),
-          range: integer()
+          range: integer(),
+          owner: atom()
         }
 
-  defstruct type: :knight, health: 100, damage: 20, range: 1
+  defstruct type: :knight, health: 100, damage: 20, range: 1, owner: nil
 
   @impl true
   def type, do: :knight
@@ -23,17 +24,13 @@ defmodule TermProject.Units.Knight do
   end
 
   @impl true
-  def attack(target) do
+  def attack(%{owner: owner} = target, %{owner: attacker_owner} = attacker) when owner != attacker_owner do
     # Reduce target's health by the Knight's damage
-    %{target | health: target.health - 20}
+    %{target | health: target.health - attacker.damage}
   end
 
   @impl true
-  def in_range?({x1, y1}, {x2, y2}) do
-    distance({x1, y1}, {x2, y2}) <= 1
-  end
-
-  defp distance({x1, y1}, {x2, y2}) do
-    :math.sqrt(:math.pow(x2 - x1, 2) + :math.pow(y2 - y1, 2))
+  def in_range?({x1, _y1}, {x2, _y2}) do
+    abs(x2 - x1) <= 1
   end
 end

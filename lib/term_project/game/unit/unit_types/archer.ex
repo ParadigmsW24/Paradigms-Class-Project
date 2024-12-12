@@ -5,10 +5,11 @@ defmodule TermProject.Units.Archer do
           type: atom(),
           health: integer(),
           damage: integer(),
-          range: integer()
+          range: integer(),
+          owner: atom()
         }
 
-  defstruct type: :archer, health: 50, damage: 10, range: 5
+  defstruct type: :archer, health: 50, damage: 10, range: 5, owner: nil
 
   @impl true
   def type, do: :archer
@@ -23,17 +24,13 @@ defmodule TermProject.Units.Archer do
   end
 
   @impl true
-  def attack(target) do
+  def attack(%{owner: owner} = target, %{owner: attacker_owner} = attacker) when owner != attacker_owner do
     # Reduce target's health by the Archer's damage
-    %{target | health: target.health - 10}
+    %{target | health: target.health - attacker.damage}
   end
 
   @impl true
-  def in_range?({x1, y1}, {x2, y2}) do
-    distance({x1, y1}, {x2, y2}) <= 5
-  end
-
-  defp distance({x1, y1}, {x2, y2}) do
-    :math.sqrt(:math.pow(x2 - x1, 2) + :math.pow(y2 - y1, 2))
+  def in_range?({x1, _y1}, {x2, _y2}) do
+    abs(x2 - x1) <= 5
   end
 end

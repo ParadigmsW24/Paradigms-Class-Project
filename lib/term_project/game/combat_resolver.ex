@@ -28,7 +28,7 @@ defmodule TermProject.Game.CombatResolver do
 
   defp in_range?(unit, target) do
     with {:ok, unit_module} <- get_unit_module(unit.type) do
-      unit_module.in_range?(unit, target)
+      unit_module.in_range?({unit.x, unit.y}, {target.x, target.y})
     else
       _ -> false
     end
@@ -36,7 +36,8 @@ defmodule TermProject.Game.CombatResolver do
 
   defp engage_combat(unit, target) do
     with {:ok, unit_module} <- get_unit_module(unit.type) do
-      unit_module.attack(unit, target)
+      updated_target = unit_module.attack(target, unit)
+      {unit, updated_target}
     else
       _ -> {unit, target}
     end
@@ -44,9 +45,9 @@ defmodule TermProject.Game.CombatResolver do
 
   defp get_unit_module(unit_type) do
     case unit_type do
-      :soldier -> {:ok, TermProject.Game.UnitTypes.Soldier}
       :archer -> {:ok, TermProject.Game.UnitTypes.Archer}
       :cavalry -> {:ok, TermProject.Game.UnitTypes.Cavalry}
+      :knight -> {:ok, TermProject.Game.UnitTypes.Knight}
       # TODO: Add other unit types here
       _ -> :error
     end
