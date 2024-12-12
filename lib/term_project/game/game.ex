@@ -10,6 +10,8 @@ defmodule TermProject.Game do
   alias TermProject.Game.LobbyServer
   alias Phoenix.PubSub
 
+  @tick_interval 100
+
   # Public API
 
   @doc """
@@ -155,6 +157,13 @@ defmodule TermProject.Game do
   def handle_info(:game_ended, state) do
     # Clean up game state if necessary
     {:stop, :normal, state}
+  end
+
+   @impl true
+  def handle_info({:game_state_update, new_state}, state) do
+    # Update the state with the new game state
+    updated_state = Map.put(state, :game_state, new_state)
+    {:noreply, updated_state}
   end
 
   # Private Helpers

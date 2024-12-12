@@ -54,80 +54,121 @@ defmodule TermProjectWeb.GameLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="game-container">
-      <%= if @countdown do %>
-        <div class="countdown">Game starts in <%= @countdown %> seconds...</div>
-      <% else %>
-        <div class="status-panel">
-          <div class="resources">
-            <div>Wood: <%= @game_state.resources.amounts.wood %></div>
+        <div class="game-container p-6 bg-gray-100 h-screen">
+  <%= if @countdown do %>
+    <div class="countdown text-xl font-bold text-center bg-blue-100 p-4 rounded-md shadow-md">
+      Game starts in <%= @countdown %> seconds...
+    </div>
+  <% else %>
+    <div class="status-panel flex justify-between items-start bg-white p-4 rounded-md shadow-lg">
+      <div class="resources text-gray-700">
+        <h2 class="text-lg font-semibold mb-2">Resources</h2>
+        <div>Wood: <%= @game_state.resources.amounts.wood %></div>
+        <div>Stone: <%= @game_state.resources.amounts.stone %></div>
+        <div>Iron: <%= @game_state.resources.amounts.iron %></div>
+        <div>Available Workers: <%= @game_state.resources.workers.unused %></div>
+      </div>
 
-            <div>Stone: <%= @game_state.resources.amounts.stone %></div>
+      <div class="bases text-gray-700">
+        <h2 class="text-lg font-semibold mb-2">Base Status</h2>
+        <div>Base 1: <%= @game_state.bases[1].health %></div>
+        <div>Base 2: <%= @game_state.bases[2].health %></div>
+      </div>
+    </div>
 
-            <div>Iron: <%= @game_state.resources.amounts.iron %></div>
+    <div class="game-controls mt-4 bg-gray-800 p-4 rounded-md text-white flex gap-4 justify-center items-center shadow-md">
+      <button
+        phx-click="spawn_unit"
+        phx-value-type="archer"
+        class="unit-button bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+      >
+        Spawn Archer
+      </button>
 
-            <div>Available Workers: <%= @game_state.resources.workers.unused %></div>
-          </div>
+      <button
+        phx-click="spawn_unit"
+        phx-value-type="soldier"
+        class="unit-button bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+      >
+        Spawn Soldier
+      </button>
 
-          <div class="bases">
-            <div>Base 1: <%= @game_state.bases[1].health %></div>
+      <button
+        phx-click="spawn_unit"
+        phx-value-type="cavalry"
+        class="unit-button bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+      >
+        Spawn Cavalry
+      </button>
 
-            <div>Base 2: <%= @game_state.bases[2].health %></div>
-          </div>
+      <div class="dropdown-section">
+        <label for="move-to-resource" class="block text-sm font-semibold">Move Worker to Resource:</label>
+        <div class="flex items-center gap-2">
+          <select
+            id="move-to-resource"
+            phx-change="move_worker_to_resource"
+            class="p-2 border border-gray-300 rounded"
+          >
+            <option value="" disabled selected>Choose a resource</option>
+            <option value="wood">Wood</option>
+            <option value="stone">Stone</option>
+            <option value="iron">Iron</option>
+          </select>
+          <button
+            phx-click="move_worker"
+            phx-value-target="to"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded"
+          >
+            Go
+          </button>
         </div>
+      </div>
 
-        <div class="game-controls">
-          <button phx-click="spawn_unit" phx-value-type="archer" class="unit-button">
-            Spawn Archer
+      <div class="dropdown-section">
+        <label for="take-from-resource" class="block text-sm font-semibold">Take Worker From Resource:</label>
+        <div class="flex items-center gap-2">
+          <select
+            id="take-from-resource"
+            phx-change="take_worker_from_resource"
+            class="p-2 border border-gray-300 rounded"
+          >
+            <option value="" disabled selected>Choose a resource</option>
+            <option value="wood">Wood</option>
+            <option value="stone">Stone</option>
+            <option value="iron">Iron</option>
+          </select>
+          <button
+            phx-click="take_worker"
+            phx-value-target="from"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded"
+          >
+            Go
           </button>
+        </div>
+      </div>
+    </div>
 
-          <button phx-click="spawn_unit" phx-value-type="soldier" class="unit-button">
-            Spawn Soldier
-          </button>
+    <div class="game-field relative mt-6 bg-gray-200 h-96 rounded-md shadow-lg p-4">
+      <div class="base left-base absolute top-4 left-4 bg-black text-white p-2 rounded">
+        Player 1 Base
+      </div>
 
-          <button phx-click="spawn_unit" phx-value-type="cavalry" class="unit-button">
-            Spawn Cavalry
-          </button>
+      <div class="base right-base absolute top-4 right-4 bg-black text-white p-2 rounded">
+        Player 2 Base
+      </div>
 
-            <div class="dropdown-section">
-              <label for="move-to-resource">Move Worker to Resource:</label>
-              <select id="move-to-resource" phx-change="move_worker_to_resource">
-                <option value="" disabled selected>Choose a resource</option>
-                <option value="wood">Wood</option>
-                <option value="stone">Stone</option>
-                <option value="iron">Iron</option>
-              </select>
-              <button phx-click="move_worker" phx-value-target="to">Go</button>
-            </div>
-
-            <div class="dropdown-section">
-              <label for="take-from-resource">Take Worker From Resource:</label>
-              <select id="take-from-resource" phx-change="take_worker_from_resource">
-                <option value="" disabled selected>Choose a resource</option>
-                <option value="wood">Wood</option>
-                <option value="stone">Stone</option>
-                <option value="iron">Iron</option>
-              </select>
-              <button phx-click="take_worker" phx-value-target="from">Go</button>
-            </div>
-          </div>
-
-        <div class="game-field">
-          <div class="base left-base">Player 1 Base</div>
-
-          <div class="base right-base">Player 2 Base</div>
-
-          <%= for unit <- @game_state.units do %>
-            <div
-              class={"unit #{unit.type}"}
-              style={"left: #{unit.position.x}px; top: #{unit.position.y}px;"}
-            >
-              <%= unit.type %>
-            </div>
-          <% end %>
+      <%= for unit <- @game_state.units do %>
+        <div
+          class={"unit #{unit.type} absolute text-center text-white bg-blue-500 rounded-full"}
+          style={"left: #{unit.position.x}px; top: #{unit.position.y}px; width: 50px; height: 50px; line-height: 50px;"}
+        >
+          <%= unit.type %>
         </div>
       <% end %>
     </div>
+  <% end %>
+</div>
+
     """
   end
 

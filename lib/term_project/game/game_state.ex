@@ -191,7 +191,8 @@ defmodule TermProject.GameState do
       )
 
     # Return updated state
-    updated_resources
+    %{state | resources: updated_resources}
+
   end
 
   @doc """
