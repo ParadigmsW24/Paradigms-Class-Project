@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<%!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -36,4 +36,75 @@
     </div>
   </form>
 </div>
+</html> --%>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Login - TermProject</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="stylesheet" href={~p"/assets/app.css"} />
+  </head>
+  <body class="bg-black text-white flex justify-center items-center min-h-screen">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md">
+      <h2 class="text-2xl font-bold mb-6">Log In</h2>
+      <form action={~p"/login"} method="post" class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm font-medium mb-2">Username</label>
+          <input
+            type="text"
+            name="user[username]"
+            id="username"
+            class="w-full p-2 border border-gray-700 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium mb-2">Password</label>
+          <input
+            type="password"
+            name="user[password]"
+            id="password"
+            class="w-full p-2 border border-gray-700 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            class="w-full p-2 bg-blue-600 rounded text-white font-bold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Log In
+          </button>
+        </div>
+      </form>
+
+      <h2 class="text-2xl font-bold mt-8 mb-6">Continue as Guest</h2>
+      <form action={~p"/guest_login"} method="post" class="space-y-4">
+        <div>
+          <label for="guest_username" class="block text-sm font-medium mb-2">Username</label>
+          <input
+            type="text"
+            name="guest_username"
+            id="guest_username"
+            class="w-full p-2 border border-gray-700 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+            required
+          />
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            class="w-full p-2 bg-green-600 rounded text-white font-bold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            Enter Lobby
+          </button>
+        </div>
+      </form>
+    </div>
+  </body>
 </html>

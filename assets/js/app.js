@@ -103,5 +103,53 @@ document.addEventListener("DOMContentLoaded", () => {
   // TODO: Add event listeners for other unit types and actions
 })
 
+// Event listeners for unit buttons
+document.addEventListener("DOMContentLoaded", () => {
+  // 배경 음악 객체 및 제어 버튼
+  const backgroundMusic = document.getElementById("background-music");
+  const stopMusicButton = document.getElementById("stop_music");
+
+  if (backgroundMusic) {
+    // Set initial volume and play audio
+    backgroundMusic.volume = 0.5;
+    backgroundMusic.play().catch((error) => {
+      console.error("Auto-play might be blocked by the browser", error);
+    });
+
+    // Unmute the audio after a brief delay
+    setTimeout(() => {
+      backgroundMusic.muted = false;
+    }, 1000);  // 1 second delay before unmuting
+  }
+
+  // 배경 음악 멈추기 버튼 클릭 이벤트
+  if (stopMusicButton) {
+    stopMusicButton.addEventListener("click", () => {
+      if (backgroundMusic) {
+        backgroundMusic.pause();  // 배경 음악 멈추기
+        console.log("Background music stopped");
+      }
+    });
+  }
+
+  // Unit buttons (soldier, archer, cavalry) - Adding sound effects on click
+  const unitButtons = [
+    { selector: '[phx-value-type="soldier"]', sound: "/sounds/soldier_spawn.mp3" },
+    { selector: '[phx-value-type="archer"]', sound: "/sounds/archer_spawn.mp3" },
+    { selector: '[phx-value-type="cavalry"]', sound: "/sounds/cavalry_spawn.mp3" }
+  ];
+
+  unitButtons.forEach((button) => {
+    const buttonElement = document.querySelector(button.selector);
+    if (buttonElement) {
+      buttonElement.addEventListener("click", () => {
+        const audio = new Audio(button.sound);
+        audio.play().then(() => console.log(`${button.selector} sound played`))
+          .catch((error) => console.error("Error playing sound:", error));
+      });
+    }
+  });
+});
+  
 // Export channel if needed elsewhere
 export default channel

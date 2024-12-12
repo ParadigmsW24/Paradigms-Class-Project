@@ -1,4 +1,4 @@
-<div>
+<%!-- <div class="text-gray-900">
   <h1>Lobby</h1>
 
   <h2>Create Lobby</h2>
@@ -13,10 +13,52 @@
       <li>
         <%= lobby %>
         <form action={~p"/lobby/join"} method="post" style="display:inline;">
-          <input type="hidden" name="lobby_name" value={lobby} />
+          <input class="text-gray-700" type="hidden" name="lobby_name" value={lobby} />
           <button type="submit">Join</button>
         </form>
       </li>
     <% end %>
   </ul>
+</div> --%>
+<div class="text-gray-100 p-4 space-y-6">
+  <h1 class="text-2xl font-bold">Lobby</h1>
+
+  <section>
+    <h2 class="text-xl font-semibold">Create Lobby</h2>
+    <form action={~p"/lobby/create"} method="post" class="space-y-4">
+      <input
+        type="text"
+        name="lobby_name"
+        placeholder="Lobby name"
+        value={@lobby_name}
+        class="block w-full px-3 py-2 border rounded-md bg-gray-800 text-gray-100 border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        type="submit"
+        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        Create Lobby
+      </button>
+    </form>
+  </section>
+
+  <section>
+    <h2 class="text-xl font-semibold">Available Lobbies</h2>
+    <ul class="space-y-2">
+      <%= for lobby <- @lobbies do %>
+        <li class="flex items-center justify-between">
+          <span class="text-gray-100"><%= lobby %></span>
+          <form action={~p"/lobby/join"} method="post" class="inline-block">
+            <input class="hidden" type="hidden" name="lobby_name" value={lobby} />
+            <button
+              type="submit"
+              class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              Join
+            </button>
+          </form>
+        </li>
+      <% end %>
+    </ul>
+  </section>
 </div>

@@ -4,3 +4,8 @@
 @import "./game.css";
 
 /* This file is for your main application CSS */
+
+#toggle-music {
+    z-index: 9999;
+  }
+  

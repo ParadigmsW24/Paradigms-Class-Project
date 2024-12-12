@@ -8,6 +8,7 @@ defmodule TermProjectWeb.GameLive do
       # Subscribe to game updates
       Phoenix.PubSub.subscribe(TermProject.PubSub, "game")
       :timer.send_interval(100, self(), :tick)
+      send(self(), :stop_background_music)
     end
 
     {:ok, assign(socket,
@@ -49,6 +50,46 @@ defmodule TermProjectWeb.GameLive do
         <% end %>
       </div>
     </div>
+        <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const soldierButton = document.querySelector('[phx-value-type="soldier"]');
+        if (soldierButton) {
+          soldierButton.addEventListener("click", () => {
+            const audio = new Audio("/sounds/knight_spawn.mp3");
+            audio.play()
+              .then(() => console.log("Soldier sound played"))
+              .catch((error) => console.error("Error playing soldier sound:", error));
+          });
+        }
+
+        const archerButton = document.querySelector('[phx-value-type="archer"]');
+        if (archerButton) {
+          archerButton.addEventListener("click", () => {
+            const audio = new Audio("/sounds/archer_spawn.mp3");
+            audio.play()
+              .then(() => console.log("Archer sound played"))
+              .catch((error) => console.error("Error playing archer sound:", error));
+          });
+        }
+
+        const cavalryButton = document.querySelector('[phx-value-type="cavalry"]');
+        if (cavalryButton) {
+          cavalryButton.addEventListener("click", () => {
+            const audio = new Audio("/sounds/calvalry_spawn.wav");
+            audio.play()
+              .then(() => console.log("Cavalry sound played"))
+              .catch((error) => console.error("Error playing cavalry sound:", error));
+          });
+        }
+
+      // Stop background music (for game page only)
+        const backgroundMusic = document.getElementById('background-music');
+        if (backgroundMusic) {
+          backgroundMusic.pause();  // Music will stop when the game page is loaded
+          console.log("Background music stopped on game page");
+        }
+      });
+    </script>
     """
   end
 
@@ -66,6 +107,17 @@ defmodule TermProjectWeb.GameLive do
 
     new_units = [new_unit | socket.assigns.units]
     {:noreply, assign(socket, units: new_units)}
+  end
+
+  @impl true
+  def handle_info(:stop_background_music, socket) do
+    send(self(), {:stop_background_music_js})
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:stop_background_music_js}, socket) do
+    {:noreply, socket}
   end
 
   @impl true
