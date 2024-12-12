@@ -5,7 +5,7 @@ defmodule TermProjectWeb.LobbyLive do
     username = params["username"] || socket.assigns[:username]
 
     if is_nil(username) do
-      {:ok, redirect(socket, to: "/login")}
+      {:ok, redirect(socket, to: "/signup")}
     else
       if connected?(socket) do
         Phoenix.PubSub.subscribe(TermProject.PubSub, "global_chat")

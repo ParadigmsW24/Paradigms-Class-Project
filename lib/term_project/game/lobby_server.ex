@@ -73,10 +73,7 @@ defmodule TermProject.Game.LobbyServer do
 
   def handle_call({:join_lobby, lobby_id, username, password}, _from, state) do
     with {:ok, lobby} <- lookup_lobby(lobby_id),
-         :ok <- validate_password_if_needed(lobby, password),
-         :ok <- validate_player_status(lobby, username),
-         :ok <- validate_lobby_capacity(lobby) do
-      updated_lobby = update_lobby_state(lobby, username)
+         {:ok, updated_lobby} <- join_lobby_logic(lobby, username, password) do
       :ets.insert(:lobbies, {lobby_id, updated_lobby})
       Phoenix.PubSub.broadcast(TermProject.PubSub, "lobby:#{lobby_id}", :lobby_updated)
       {:reply, :ok, state}
@@ -119,7 +116,7 @@ defmodule TermProject.Game.LobbyServer do
       :ets.tab2list(:lobbies)
       |> Enum.map(fn {_id, lobby} -> lobby end)
       |> Enum.filter(fn lobby ->
-        map_size(lobby.players) < lobby.max_players and Map.has_key?(lobby, :password)
+        map_size(lobby.players) < lobby.max_players and not Map.has_key?(lobby, :password)
       end)
 
     case available_lobbies do
@@ -129,9 +126,15 @@ defmodule TermProject.Game.LobbyServer do
       lobbies ->
         lobby = Enum.random(lobbies)
 
-        case join_lobby(lobby.id, username) do
-          :ok -> {:reply, {:ok, lobby.id}, state}
-          {:error, reason} -> {:reply, {:error, reason}, state}
+        # Use the extracted logic directly instead of GenServer.call:
+        case join_lobby_logic(lobby, username, nil) do
+          {:ok, updated_lobby} ->
+            :ets.insert(:lobbies, {lobby.id, updated_lobby})
+            Phoenix.PubSub.broadcast(TermProject.PubSub, "lobby:#{lobby.id}", :lobby_updated)
+            {:reply, {:ok, lobby.id}, state}
+
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
         end
     end
   end
@@ -154,6 +157,14 @@ defmodule TermProject.Game.LobbyServer do
   end
 
   # Helper function to handle joining a lobby internally
+  defp join_lobby_logic(lobby, username, password) do
+    with :ok <- validate_password_if_needed(lobby, password),
+         :ok <- validate_player_status(lobby, username),
+         :ok <- validate_lobby_capacity(lobby) do
+      {:ok, update_lobby_state(lobby, username)}
+    end
+  end
+
   defp lookup_lobby(lobby_id) do
     case :ets.lookup(:lobbies, lobby_id) do
       [{^lobby_id, lobby}] -> {:ok, lobby}
