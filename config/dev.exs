@@ -2,10 +2,10 @@ import Config
 
 # Configure your database
 config :term_project, TermProject.Repo,
-  username: "singh",
-  password: "singh",
-  hostname: "localhost",
-  database: "singh",
+username: "postgres",
+password: "postgres",
+hostname: "localhost",
+database: "term_project_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
