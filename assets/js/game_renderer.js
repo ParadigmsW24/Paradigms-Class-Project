@@ -21,16 +21,79 @@ const GameRenderer = {
 
   preload() {
     // Load assets
-    this.load.image("background", "path/to/background.png");
-    this.load.image("soldier", "path/to/soldier.png");
-    this.load.image("archer", "path/to/archer.png");
-    this.load.image("cavalry", "path/to/cavalry.png");
+    this.load.spritesheet("soldier", "assets/images/knightspritelist115-95.png", { frameWidth: 115, frameHeight: 95 });
+    this.load.spritesheet("archer", "assets/images/ArcherSpritelist115-126.png", { frameWidth: 115, frameHeight: 126 });
+    this.load.spritesheet("cavalry", "assets/images/horse95-80.png", { frameWidth: 95, frameHeight: 80 });
   },
 
   create() {
     // Add the background
     this.add.image(400, 300, "background"); // Centered background
     this.units = this.add.group(); // Group for all units
+
+    // Create animations
+    this.anims.create({
+      key: "soldier_walk",
+      frames: this.anims.generateFrameNumbers("soldier", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "soldier_attack",
+      frames: this.anims.generateFrameNumbers("soldier", { start: 4, end: 7 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "soldier_death",
+      frames: this.anims.generateFrameNumbers("soldier", { start: 8, end: 11 }),
+      frameRate: 10,
+      repeat: 0,
+    });
+
+    this.anims.create({
+      key: "archer_walk",
+      frames: this.anims.generateFrameNumbers("archer", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "archer_attack",
+      frames: this.anims.generateFrameNumbers("archer", { start: 4, end: 7 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "archer_death",
+      frames: this.anims.generateFrameNumbers("archer", { start: 8, end: 11 }),
+      frameRate: 10,
+      repeat: 0,
+    });
+
+    this.anims.create({
+      key: "cavalry_walk",
+      frames: this.anims.generateFrameNumbers("cavalry", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "cavalry_attack",
+      frames: this.anims.generateFrameNumbers("cavalry", { start: 4, end: 7 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "cavalry_death",
+      frames: this.anims.generateFrameNumbers("cavalry", { start: 8, end: 11 }),
+      frameRate: 10,
+      repeat: 0,
+    });
   },
 
   update() {
@@ -54,18 +117,12 @@ const GameRenderer = {
         case "cavalry":
           spriteKey = "cavalry";
           break;
-        default:
-          console.warn(`Unknown unit type: ${unit.type}`);
-          return;
       }
 
-      const renderedUnit = this.units.create(unit.x, unit.y, spriteKey);
-      renderedUnit.setOrigin(0.5, 0.5);
+      const sprite = this.units.create(unit.x, unit.y, spriteKey);
+      sprite.play(`${unit.type}_${unit.action}`);
     });
   },
 };
-
-// Initialize Phaser when the module loads
-GameRenderer.init();
 
 export default GameRenderer;
