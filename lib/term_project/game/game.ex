@@ -72,6 +72,9 @@ defmodule TermProject.Game do
     PubSub.subscribe(TermProject.PubSub, "game:#{lobby_id}")
     Process.flag(:trap_exit, true)
 
+    # Start the tick timer
+    schedule_tick()
+
     {:ok, initial_state}
   end
 
@@ -95,6 +98,27 @@ defmodule TermProject.Game do
   end
 
   @impl true
+  def handle_info(:tick, state) do
+    # Increment the tick in the game state
+    updated_game_state = %{
+      state.game_state
+      | tick: state.game_state.tick + 1
+    }
+
+    # Perform resource updates based on the new tick
+    updated_game_state =
+      GameState.auto_update_resources(updated_game_state)
+
+    # Broadcast the updated game state
+    broadcast_game_update(state.lobby_id, updated_game_state)
+
+    # Schedule the next tick
+    schedule_tick()
+
+    {:noreply, %{state | game_state: updated_game_state}}
+  end
+
+  @impl true
   def handle_info(:game_started, state) do
     # Update state if needed at game start
     {:noreply, state}
@@ -114,6 +138,10 @@ defmodule TermProject.Game do
       {:game_state_update, game_state}
     )
   end
+end
+
+defp schedule_tick do
+  Process.send_after(self(), :tick, @tick_interval)
 end
 
 # defmodule TermProject.Game do
