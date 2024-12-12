@@ -49,8 +49,7 @@ defmodule TermProject.Game do
   end
 
   def handle_info(:tick, state) do
-    {updated_state, events} = state
-    |> process_tick()
+    {updated_state, events} = process_tick(state)
 
     broadcast_game_update(state.match_id, %{
       state: updated_state.game_state,
@@ -62,18 +61,16 @@ defmodule TermProject.Game do
   end
 
   defp process_tick(state) do
-    {state, events} = state
-    |> increment_tick()
-    |> then(fn state -> process_unit_movement(state) end)
-    |> then(fn {state, events} -> process_combat(state, events) end)
-    |> then(fn {state, events} -> update_resources(state, events) end)
-    |> then(fn {state, events} -> check_victory_conditions(state, events) end)
-
+    state = increment_tick(state)
+    state = process_unit_movement(state)
+    state = process_combat(state)
+    state = update_resources(state)
+    {state, events} = check_victory_conditions(state)
     {state, events}
   end
 
   defp increment_tick(state) do
-    {%{state | game_state: %{state.game_state | tick: state.game_state.tick + 1}}, []}
+    %{state | game_state: %{state.game_state | tick: state.game_state.tick + 1}}
   end
 
   defp process_unit_movement(state) do
@@ -84,35 +81,33 @@ defmodule TermProject.Game do
       %{unit | x: new_x}
     end)
 
-    {%{state | game_state: %{state.game_state | units: updated_units}}, []}
+    %{state | game_state: %{state.game_state | units: updated_units}}
   end
 
-  defp process_combat(state, events) do
-    {updated_units, combat_events} = TermProject.Game.CombatResolver.resolve(state.game_state.units)
-    {%{state | game_state: %{state.game_state | units: updated_units}}, events ++ combat_events}
+  defp process_combat(state) do
+    {updated_units, _combat_events} = TermProject.Game.CombatResolver.resolve(state.game_state.units)
+    %{state | game_state: %{state.game_state | units: updated_units}}
   end
 
-  defp update_resources(state, events) do
-    updated_resources = TermProject.ResourceManager.update_resources(
-      state.game_state.resources,
-      state.game_state.tick
-    )
-    {%{state | game_state: %{state.game_state | resources: updated_resources}}, events}
+  defp update_resources(state) do
+    updated_resources = TermProject.ResourceManager.auto_update(state.game_state.resources)
+    %{state | game_state: %{state.game_state | resources: updated_resources}}
   end
 
-  defp check_victory_conditions(state, events) do
-    cond do
+  defp check_victory_conditions(state) do
+    events = cond do
       state.game_state.bases[1].health <= 0 ->
         broadcast_game_over(state.match_id, %{winner: 2})
-        {state, events ++ [{:game_over, %{winner: 2}}]}
+        [{:game_over, %{winner: 2}}]
 
       state.game_state.bases[2].health <= 0 ->
         broadcast_game_over(state.match_id, %{winner: 1})
-        {state, events ++ [{:game_over, %{winner: 1}}]}
+        [{:game_over, %{winner: 1}}]
 
       true ->
-        {state, events}
+        []
     end
+    {state, events}
   end
 
   defp broadcast_game_over(match_id, payload) do
