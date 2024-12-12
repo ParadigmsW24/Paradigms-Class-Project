@@ -15,13 +15,14 @@ defmodule TermProject.Units.Knight do
   def type, do: :knight
 
   @impl true
-  def stats do
+  def stats(owner) do
     %{
       type: :knight,
       health: 100,
       damage: 20,
       range: 1,
-      position: %{x: 50, y: 250}
+      position: %{x: 50, y: 250},
+      owner: owner
     }
   end
 

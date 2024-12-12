@@ -16,14 +16,15 @@ defmodule TermProject.Units.Cavalry do
   def type, do: :cavalry
 
   @impl true
-  def stats do
+  def stats(owner) do
     %{
       type: :cavalry,
       health: 75,
       damage: 15,
       range: 2,
       speed: 3,
-      position: %{x: 50, y: 250}
+      position: %{x: 50, y: 250},
+      owner: owner
     }
   end
 

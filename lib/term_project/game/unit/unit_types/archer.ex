@@ -15,13 +15,14 @@ defmodule TermProject.Units.Archer do
   def type, do: :archer
 
   @impl true
-  def stats do
+  def stats(owner) do
     %{
       type: :archer,
       health: 50,
       damage: 10,
       range: 5,
-      position: %{x: 50, y: 250}
+      position: %{x: 50, y: 250},
+      owner: owner
     }
   end
 

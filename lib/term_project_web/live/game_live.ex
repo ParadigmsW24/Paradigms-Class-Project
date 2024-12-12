@@ -19,7 +19,7 @@ defmodule TermProjectWeb.GameLive do
       Phoenix.PubSub.subscribe(TermProject.PubSub, "game:#{lobby_id}")
       game_state = Game.get_state(lobby_id)
       socket = assign_game_state(socket, game_state)
-    
+
     end
 
     {:ok, socket}
@@ -53,12 +53,27 @@ defmodule TermProjectWeb.GameLive do
       </div>
 
       <div class="game-field" style="position: relative; width: 1000px; height: 600px; border: 1px solid #000;">
-        <div class="base left-base" style="position: absolute; left: 0; top: 300px;">Player 1 Base</div>
-        <div class="base right-base" style="position: absolute; right: 0; top: 300px;">Player 2 Base</div>
+        <div class="base left-base" style="position: absolute; left: 0; top: 300px;"><%= @username %> Base</div>
+        <div class="base right-base" style="position: absolute; right: 0; top: 300px;">Enemy Base</div>
 
-        <%= for unit <- @units do %>
-          <div class={"unit #{unit.type}"} style={"position:absolute; left:#{unit.position.x}px; top:#{unit.position.y}px;"}>
-            <%= Atom.to_string(unit.type) %>
+            <%= for unit <- @units do %>
+          <%
+            # Assume `@lobby_id` or `@username` identifies which player is which.
+            # If @username == "user1", we show normal coords.
+            # Otherwise, we flip horizontally.
+
+            field_width = 1000
+            {left, top} =
+              if @username == "user1" do
+                {unit.position.x, unit.position.y}
+              else
+                {field_width - unit.position.x, unit.position.y}
+              end
+          %>
+
+          <div class="unit"
+              style={"position:absolute; left:#{left}px; top:#{top}px;"}>
+            <%= unit.type %>
           </div>
         <% end %>
       </div>

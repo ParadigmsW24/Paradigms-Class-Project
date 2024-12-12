@@ -62,8 +62,8 @@ defmodule TermProject.Game do
   end
 
   @impl true
-  def handle_call({:spawn_unit, unit_type, player_id}, _from, state) do
-    updated_state = GameState.apply_action(state.game_state, {:create_unit, unit_type})
+  def handle_call({:spawn_unit, unit_type, owner}, _from, state) do
+    updated_state = GameState.apply_action(state.game_state, {:create_unit, unit_type, owner})
     broadcast_game_update(state.match_id, updated_state)
 
     {:reply, :ok, %{state | game_state: updated_state}}
@@ -89,16 +89,17 @@ defmodule TermProject.Game do
   end
 
   @impl true
-  def handle_info(:game_ended, state) do
-    # Clean up game state
-    {:stop, :normal, state}
-  end
-
   def handle_info(:tick, state) do
-    # Update units' positions here
     updated_units = Enum.map(state.game_state.units, fn unit ->
-      # Move the unit 5 pixels to the right each tick
-      Map.update!(unit, :position, fn pos -> %{pos | x: pos.x + 5} end)
+      # Assume unit.owner is either "user1" or "user2"
+      # If "user1" owns the unit, move right; if "user2" owns it, move left.
+      if unit.owner == "user1" do
+        # Move 5 pixels to the right
+        Map.update!(unit, :position, fn pos -> %{pos | x: pos.x + 5} end)
+      else
+        # Move 5 pixels to the left
+        Map.update!(unit, :position, fn pos -> %{pos | x: pos.x - 5} end)
+      end
     end)
 
     updated_state = %{state.game_state | units: updated_units}
@@ -106,6 +107,7 @@ defmodule TermProject.Game do
 
     {:noreply, %{state | game_state: updated_state}}
   end
+
 
   # Private Helpers
 
