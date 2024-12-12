@@ -105,22 +105,23 @@ defmodule TermProjectWeb.GameLive do
         <label for="move-to-resource" class="block text-sm font-semibold">Move Worker to Resource:</label>
         <div class="flex items-center gap-2">
           <select
-            id="move-to-resource"
-            phx-change="move_worker_to_resource"
-            class="p-2 border border-gray-300 rounded"
-          >
-            <option value="" disabled selected>Choose a resource</option>
-            <option value="wood">Wood</option>
-            <option value="stone">Stone</option>
-            <option value="iron">Iron</option>
-          </select>
+        id="move-to-resource"
+        class="p-2 border border-gray-300 rounded"
+        onchange="updateMoveWorkerButtonTarget()"
+      >
+        <option value="" disabled selected>Choose a resource</option>
+        <option value="wood">Wood</option>
+        <option value="stone">Stone</option>
+        <option value="iron">Iron</option>
+      </select>
           <button
-            phx-click="move_worker"
-            phx-value-target="to"
-            class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded"
-          >
-            Go
-          </button>
+        id="move-worker-button"
+        phx-click="move_worker"
+        phx-value-target=""
+        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded"
+      >
+        Go
+      </button>
         </div>
       </div>
 
@@ -128,22 +129,23 @@ defmodule TermProjectWeb.GameLive do
         <label for="take-from-resource" class="block text-sm font-semibold">Take Worker From Resource:</label>
         <div class="flex items-center gap-2">
           <select
-            id="take-from-resource"
-            phx-change="take_worker_from_resource"
-            class="p-2 border border-gray-300 rounded"
-          >
-            <option value="" disabled selected>Choose a resource</option>
-            <option value="wood">Wood</option>
-            <option value="stone">Stone</option>
-            <option value="iron">Iron</option>
-          </select>
+        id="take-from-resource"
+        class="p-2 border border-gray-300 rounded"
+        onchange="updateTakeWorkerButtonTarget()"
+      >
+        <option value="" disabled selected>Choose a resource</option>
+        <option value="wood">Wood</option>
+        <option value="stone">Stone</option>
+        <option value="iron">Iron</option>
+      </select>
           <button
-            phx-click="take_worker"
-            phx-value-target="from"
-            class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded"
-          >
-            Go
-          </button>
+        id="take-worker-button"
+        phx-click="take_worker"
+        phx-value-target=""
+        class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded"
+      >
+        Go
+      </button>
         </div>
       </div>
     </div>
@@ -169,6 +171,20 @@ defmodule TermProjectWeb.GameLive do
   <% end %>
 </div>
 
+<script>
+    function updateTakeWorkerButtonTarget() {
+      const selectElement = document.getElementById('take-from-resource');
+      const buttonElement = document.getElementById('take-worker-button');
+      buttonElement.setAttribute('phx-value-target', selectElement.value);
+    }
+
+    function updateMoveWorkerButtonTarget() {
+      const selectElement = document.getElementById('move-to-resource');
+      const buttonElement = document.getElementById('move-worker-button');
+      buttonElement.setAttribute('phx-value-target', selectElement.value);
+    }
+  </script>
+
     """
   end
 
@@ -190,8 +206,11 @@ defmodule TermProjectWeb.GameLive do
       {:ok, updated_game_state} ->
         {:noreply, assign(socket, :game_state, updated_game_state)}
 
-      {:error, :insufficient_workers} ->
+      {:error, reason, _updated_game_state} ->
         {:noreply, put_flash(socket, :error, "No workers available in #{target_resource}!")}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Unexpected error occurred")}
     end
   end
 
@@ -201,8 +220,11 @@ defmodule TermProjectWeb.GameLive do
       {:ok, updated_game_state} ->
         {:noreply, assign(socket, :game_state, updated_game_state)}
 
-      {:error, :insufficient_workers} ->
+      {:error, reason, _updated_game_state} ->
         {:noreply, put_flash(socket, :error, "No unused workers available!")}
+
+      _ ->
+        {:noreply, put_flash(socket, :error, "Unexpected error occurred")}
     end
   end
 

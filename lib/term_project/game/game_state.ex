@@ -17,23 +17,21 @@ defmodule TermProject.GameState do
 
   # Base positions
   @base_positions %{
-    # Left side
     1 => %{x: 0, y: @field_height / 2},
-    # Right side
     2 => %{x: 1000, y: @field_height / 2}
   }
 
   # Resource update intervals (based off of 100ms tick speed)
-  # 5 seconds
   @wood_update_interval 50
-  # 7 seconds
   @stone_update_interval 70
-  # 12 seconds
   @iron_update_interval 120
 
   defstruct tick: 0,
             units: [],
-            resources: ResourceManager.initialize(),
+            resources: %{
+              workers: %{unused: 0, wood: 3, stone: 3, iron: 3},
+              amounts: %{wood: 200, stone: 100, iron: 20}
+            },
             bases: %{
               1 => %{position: nil, health: 1000},
               2 => %{position: nil, health: 1000}
@@ -59,17 +57,14 @@ defmodule TermProject.GameState do
   @doc """
   Creates a new game state with default values.
   """
-
-  # Add this after the @type definition:
-
-  @doc """
-  Creates a new game state with default values.
-  """
   def new do
     %__MODULE__{
       tick: 0,
       units: [],
-      resources: ResourceManager.initialize(),
+      resources: %{
+        workers: %{unused: 0, wood: 3, stone: 3, iron: 3},
+        amounts: %{wood: 200, stone: 100, iron: 20}
+      },
       bases: %{
         1 => %{position: @base_positions[1], health: 1000},
         2 => %{position: @base_positions[2], health: 1000}
@@ -96,7 +91,6 @@ defmodule TermProject.GameState do
       health: stats.health,
       damage: stats.damage,
       range: stats.range,
-      # Add initial position
       position: %{x: 0, y: 0}
     }
 
@@ -192,7 +186,6 @@ defmodule TermProject.GameState do
 
     # Return updated state
     %{state | resources: updated_resources}
-
   end
 
   @doc """
@@ -205,8 +198,15 @@ defmodule TermProject.GameState do
   Returns:
     - The updated resource map with the worker moved to the `:unused` pool.
   """
-  def add_worker_to_unused(resources, from),
-    do: ResourceManager.redistribute_worker(resources, from, :unused)
+  def add_worker_to_unused(resources, from) do
+    case ResourceManager.redistribute_worker(resources, from, :unused) do
+      {:ok, updated_resources} ->
+        {:ok, updated_resources}
+
+      {:error, reason} ->
+        {:error, reason, resources}
+    end
+  end
 
   @doc """
   Moves a worker from the `:unused` pool to a specified resource.
@@ -218,6 +218,13 @@ defmodule TermProject.GameState do
   Returns:
     - The updated resource map with the worker added to the specified resource.
   """
-  def add_worker_to_resource(resources, to),
-    do: ResourceManager.redistribute_worker(resources, :unused, to)
+  def add_worker_to_resource(resources, to) do
+    case ResourceManager.redistribute_worker(resources, :unused, to) do
+      {:ok, updated_resources} ->
+        {:ok, updated_resources}
+
+      {:error, reason} ->
+        {:error, reason, resources}
+    end
+  end
 end

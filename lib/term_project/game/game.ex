@@ -7,7 +7,6 @@ defmodule TermProject.Game do
   use GenServer
 
   alias TermProject.GameState
-  alias TermProject.Game.LobbyServer
   alias Phoenix.PubSub
 
   @tick_interval 100
@@ -51,9 +50,22 @@ defmodule TermProject.Game do
     end
   end
 
+  @doc """
+  Takes a worker from a specified resource.
+  """
+  def take_worker_from_resource(lobby_id, from) do
+    GenServer.call({:global, {:game_server, lobby_id}}, {:take_worker, from})
+  end
+
+  @doc """
+  Moves a worker to a specified resource.
+  """
+  def move_worker_to_resource(lobby_id, to) do
+    GenServer.call({:global, {:game_server, lobby_id}}, {:move_worker, to})
+  end
+
   # GenServer Callbacks
 
-  # In game.ex
   @impl true
   def init(%{lobby_id: lobby_id, players: player_mapping}) do
     # Debug
@@ -93,6 +105,34 @@ defmodule TermProject.Game do
   end
 
   @impl true
+  def handle_call({:take_worker, from_resource}, _from, state) do
+    case GameState.add_worker_to_unused(state.game_state.resources, from_resource) do
+      {:ok, updated_resources} ->
+        updated_game_state = %{state.game_state | resources: updated_resources}
+        broadcast_game_update(state.lobby_id, updated_game_state)
+        {:reply, {:ok, updated_game_state}, %{state | game_state: updated_game_state}}
+
+      {:error, reason, resources} ->
+        updated_game_state = %{state.game_state | resources: resources}
+        {:reply, {:error, reason, updated_game_state}, %{state | game_state: updated_game_state}}
+    end
+  end
+
+  @impl true
+  def handle_call({:move_worker, to}, _from, state) do
+    case GameState.add_worker_to_resource(state.game_state.resources, to) do
+      {:ok, updated_resources} ->
+        updated_game_state = %{state.game_state | resources: updated_resources}
+        broadcast_game_update(state.lobby_id, updated_game_state)
+        {:reply, {:ok, updated_game_state}, %{state | game_state: updated_game_state}}
+
+      {:error, reason, resources} ->
+        updated_game_state = %{state.game_state | resources: resources}
+        {:reply, {:error, reason, updated_game_state}, %{state | game_state: updated_game_state}}
+    end
+  end
+
+  @impl true
   def handle_info({:player_action, _player_id, action}, state) do
     updated_game_state = GameState.apply_action(state.game_state, action)
     broadcast_game_update(state.lobby_id, updated_game_state)
@@ -121,33 +161,6 @@ defmodule TermProject.Game do
   end
 
   @impl true
-  def handle_call({:take_worker, from}, _from, state) do
-    case GameState.add_worker_to_unused(state.game_state.resources, from) do
-      {:ok, updated_resources} ->
-        updated_game_state = %{state.game_state | resources: updated_resources}
-        broadcast_game_update(state.lobby_id, updated_game_state)
-        {:reply, {:ok, updated_game_state}, %{state | game_state: updated_game_state}}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-  @impl true
-  def handle_call({:move_worker, to}, _from, state) do
-    case GameState.add_worker_to_resource(state.game_state.resources, to) do
-      {:ok, updated_resources} ->
-        updated_game_state = %{state.game_state | resources: updated_resources}
-        broadcast_game_update(state.lobby_id, updated_game_state)
-        {:reply, {:ok, updated_game_state}, %{state | game_state: updated_game_state}}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, state}
-    end
-  end
-
-
-  @impl true
   def handle_info(:game_started, state) do
     # Update state if needed at game start
     {:noreply, state}
@@ -159,7 +172,7 @@ defmodule TermProject.Game do
     {:stop, :normal, state}
   end
 
-   @impl true
+  @impl true
   def handle_info({:game_state_update, new_state}, state) do
     # Update the state with the new game state
     updated_state = Map.put(state, :game_state, new_state)
@@ -178,8 +191,8 @@ defmodule TermProject.Game do
   defp schedule_tick do
     Process.send_after(self(), :tick, @tick_interval)
   end
-
 end
+
 
 # defmodule TermProject.Game do
 #   @moduledoc """
