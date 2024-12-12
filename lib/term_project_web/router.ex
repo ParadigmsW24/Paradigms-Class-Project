@@ -1,4 +1,5 @@
 defmodule TermProjectWeb.Router do
+  alias TermProject.Game
   alias Hex.API.Auth
   use TermProjectWeb, :router
 
@@ -22,8 +23,9 @@ defmodule TermProjectWeb.Router do
     post "/signup", AuthController, :create
 
     live_session :default, on_mount: {TermProjectWeb.AuthLive, :on_mount} do
-      live "/game", GameLive
+      live "/testing", GameLive
     end
+    live "/game", GameLive
 
     live "/", LobbyLive, :index
     live "/lobby/:id", LobbyRoomLive, :show
