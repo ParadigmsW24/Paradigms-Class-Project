@@ -44,6 +44,7 @@ defmodule TermProject.Game do
   @impl true
   def init(%{match_id: match_id}) do
     IO.puts("Starting Game server for #{match_id}")
+    :timer.send_interval(100, :tick)
     # Initialize game state when lobby transitions to "playing" state
     initial_state = %{
       match_id: match_id,  # Same as match_id for correlation
@@ -91,6 +92,19 @@ defmodule TermProject.Game do
   def handle_info(:game_ended, state) do
     # Clean up game state
     {:stop, :normal, state}
+  end
+
+  def handle_info(:tick, state) do
+    # Update units' positions here
+    updated_units = Enum.map(state.game_state.units, fn unit ->
+      # Move the unit 5 pixels to the right each tick
+      Map.update!(unit, :position, fn pos -> %{pos | x: pos.x + 5} end)
+    end)
+
+    updated_state = %{state.game_state | units: updated_units}
+    broadcast_game_update(state.match_id, updated_state)
+
+    {:noreply, %{state | game_state: updated_state}}
   end
 
   # Private Helpers
