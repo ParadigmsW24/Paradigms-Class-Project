@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../../assets/node_modules/tailwindcss/base.css", "../../../../assets/node_modules/tailwindcss/components.css", "../../../../assets/node_modules/tailwindcss/utilities.css"],
+  "sourcesContent": ["@tailwind base;\n", "@tailwind components;\n", "@tailwind utilities;\n"],
+  "mappings": "AAAA,UAAU,KCAV,UAAU,WCAV,UAAU",
+  "names": []
+}

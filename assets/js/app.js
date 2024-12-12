@@ -53,5 +53,35 @@ document.addEventListener("DOMContentLoaded", () => {
   // TODO: Add event listeners for other unit types and actions
 })
 
+document.addEventListener("DOMContentLoaded", () => {
+  const spawnSoldierButton = document.getElementById("spawn-archer-button");
+  if (spawnSoldierButton) {
+    spawnSoldierButton.addEventListener("click", () => {
+      channel.push("spawn_unit", { unit_type: "archer" });
+    });
+  }
+});
+
+
+// Handle sound effects for unit creation
+channel.on("sound_effect", payload => {
+  const { event, data } = payload;
+
+  if (event === "unit_creation") {
+    const soundMap = {
+      archer: "/sounds/archer_spawn.mp3",
+      soldier: "/sounds/soldier_spawn.mp3",
+      cavalry: "/sounds/cavalry_spawn.wav"
+    };
+
+    const soundPath = soundMap[data.unit_type];
+    if (soundPath) {
+      const audio = new Audio(soundPath);
+      audio.play();
+    }
+  }
+});
+
+
 // Export channel if needed elsewhere
 export default channel

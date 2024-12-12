@@ -15,8 +15,17 @@ defmodule TermProjectWeb.GameChannel do
   def handle_in("spawn_unit", %{"unit_type" => unit_type}, socket) do
     player_id = socket.assigns.player_id
     case Game.spawn_unit(player_id, String.to_existing_atom(unit_type)) do
-      :ok -> {:noreply, socket}
-      {:error, reason} -> {:reply, {:error, reason}, socket}
+      :ok ->
+        # Broadcast sound_effect event to all clients in the "game:lobby" topic
+        broadcast!(socket, "sound_effect", %{
+          event: "unit_creation",
+          data: %{unit_type: unit_type}
+        })
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, socket}
     end
   end
 

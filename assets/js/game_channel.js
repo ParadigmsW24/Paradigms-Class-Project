@@ -9,10 +9,10 @@ channel.join()
   })
   .receive("error", resp => { console.log("Unable to join", resp) })
 
-// Handle incoming state updates
-channel.on("state_update", state => {
-  // TODO: Implement game state rendering
-  console.log("Received game state:", state)
-})
-
-export default channel
+  channel.on("state_update", state => {
+    // TODO: Implement game state rendering without logging
+  })
+  
+  
+  window.channel = channel; // channel을 전역으로 노출
+  export default channel;

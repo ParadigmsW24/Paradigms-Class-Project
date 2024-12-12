@@ -9,7 +9,7 @@ defmodule TermProject.Game.UnitTypes.Soldier do
 
   @impl true
   def init(opts) do
-    %{
+    unit = %{
       id: opts[:id],
       type: :soldier,
       position: opts[:position],
@@ -19,6 +19,11 @@ defmodule TermProject.Game.UnitTypes.Soldier do
       speed: 1.0,
       range: 1.5
     }
+
+    # Notify that a new unit of type :soldier has been created
+    notify_sound_effect(:unit_creation, %{unit_type: unit.type, unit_id: unit.id})
+
+    unit
   end
 
   @impl true
@@ -37,5 +42,14 @@ defmodule TermProject.Game.UnitTypes.Soldier do
   @impl true
   def in_range?(unit, target) do
     Position.distance(unit.position, target.position) <= unit.range
+  end
+
+  # Helper function to broadcast sound effect events.
+  defp notify_sound_effect(event, data) do
+    Phoenix.PubSub.broadcast(
+      TermProject.PubSub,
+      "sound_effects",
+      %{event: event, data: data}
+    )
   end
 end

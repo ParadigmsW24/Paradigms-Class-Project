@@ -24,7 +24,7 @@ defmodule TermProjectWeb.Endpoint do
     at: "/",
     from: :term_project,
     gzip: false,
-    only: TermProjectWeb.static_paths()
+    only: ~w(css fonts images js favicon.ico robots.txt static sounds assets)
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
