@@ -50,15 +50,20 @@ defmodule TermProject.Game do
 
   def handle_info(:tick, state) do
     {updated_state, events} = process_tick(state)
-
-    broadcast_game_update(state.match_id, %{
-      state: updated_state.game_state,
-      events: events
-    })
-
+    broadcast_game_update(state.match_id, %{state: updated_state.game_state, events: events})
     schedule_tick()
     {:noreply, updated_state}
   end
+
+  def handle_info({:game_state_update, %{state: game_state, events: events}}, state) do
+    {:noreply, %{state | game_state: game_state}}
+  end
+
+  def handle_info({:game_over, payload}, state) do
+    {:noreply, state}
+  end
+
+  def handle_info(_, state), do: {:noreply, state}
 
   defp process_tick(state) do
     state = increment_tick(state)
