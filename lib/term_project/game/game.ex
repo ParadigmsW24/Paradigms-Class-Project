@@ -119,6 +119,33 @@ defmodule TermProject.Game do
   end
 
   @impl true
+  def handle_call({:take_worker, from}, _from, state) do
+    case GameState.add_worker_to_unused(state.game_state.resources, from) do
+      {:ok, updated_resources} ->
+        updated_game_state = %{state.game_state | resources: updated_resources}
+        broadcast_game_update(state.lobby_id, updated_game_state)
+        {:reply, {:ok, updated_game_state}, %{state | game_state: updated_game_state}}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:move_worker, to}, _from, state) do
+    case GameState.add_worker_to_resource(state.game_state.resources, to) do
+      {:ok, updated_resources} ->
+        updated_game_state = %{state.game_state | resources: updated_resources}
+        broadcast_game_update(state.lobby_id, updated_game_state)
+        {:reply, {:ok, updated_game_state}, %{state | game_state: updated_game_state}}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+
+  @impl true
   def handle_info(:game_started, state) do
     # Update state if needed at game start
     {:noreply, state}

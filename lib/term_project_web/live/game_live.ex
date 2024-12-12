@@ -61,38 +61,62 @@ defmodule TermProjectWeb.GameLive do
         <div class="status-panel">
           <div class="resources">
             <div>Wood: <%= @game_state.resources.amounts.wood %></div>
-            
+
             <div>Stone: <%= @game_state.resources.amounts.stone %></div>
-            
+
             <div>Iron: <%= @game_state.resources.amounts.iron %></div>
+
+            <div>Available Workers: <%= @game_state.resources.workers.unused %></div>
           </div>
-          
+
           <div class="bases">
             <div>Base 1: <%= @game_state.bases[1].health %></div>
-            
+
             <div>Base 2: <%= @game_state.bases[2].health %></div>
           </div>
         </div>
-        
+
         <div class="game-controls">
           <button phx-click="spawn_unit" phx-value-type="archer" class="unit-button">
             Spawn Archer
           </button>
-          
+
           <button phx-click="spawn_unit" phx-value-type="soldier" class="unit-button">
             Spawn Soldier
           </button>
-          
+
           <button phx-click="spawn_unit" phx-value-type="cavalry" class="unit-button">
             Spawn Cavalry
           </button>
-        </div>
-        
+
+            <div class="dropdown-section">
+              <label for="move-to-resource">Move Worker to Resource:</label>
+              <select id="move-to-resource" phx-change="move_worker_to_resource">
+                <option value="" disabled selected>Choose a resource</option>
+                <option value="wood">Wood</option>
+                <option value="stone">Stone</option>
+                <option value="iron">Iron</option>
+              </select>
+              <button phx-click="move_worker" phx-value-target="to">Go</button>
+            </div>
+
+            <div class="dropdown-section">
+              <label for="take-from-resource">Take Worker From Resource:</label>
+              <select id="take-from-resource" phx-change="take_worker_from_resource">
+                <option value="" disabled selected>Choose a resource</option>
+                <option value="wood">Wood</option>
+                <option value="stone">Stone</option>
+                <option value="iron">Iron</option>
+              </select>
+              <button phx-click="take_worker" phx-value-target="from">Go</button>
+            </div>
+          </div>
+
         <div class="game-field">
           <div class="base left-base">Player 1 Base</div>
-          
+
           <div class="base right-base">Player 2 Base</div>
-          
+
           <%= for unit <- @game_state.units do %>
             <div
               class={"unit #{unit.type}"}
@@ -116,6 +140,28 @@ defmodule TermProjectWeb.GameLive do
     else
       nil -> {:noreply, put_flash(socket, :error, "Player not assigned")}
       {:error, reason} -> {:noreply, put_flash(socket, :error, "Could not spawn unit: #{reason}")}
+    end
+  end
+
+  @impl true
+  def handle_event("take_worker", %{"target" => target_resource}, socket) do
+    case Game.take_worker_from_resource(socket.assigns.lobby_id, String.to_atom(target_resource)) do
+      {:ok, updated_game_state} ->
+        {:noreply, assign(socket, :game_state, updated_game_state)}
+
+      {:error, :insufficient_workers} ->
+        {:noreply, put_flash(socket, :error, "No workers available in #{target_resource}!")}
+    end
+  end
+
+  @impl true
+  def handle_event("move_worker", %{"target" => target_resource}, socket) do
+    case Game.move_worker_to_resource(socket.assigns.lobby_id, String.to_atom(target_resource)) do
+      {:ok, updated_game_state} ->
+        {:noreply, assign(socket, :game_state, updated_game_state)}
+
+      {:error, :insufficient_workers} ->
+        {:noreply, put_flash(socket, :error, "No unused workers available!")}
     end
   end
 
