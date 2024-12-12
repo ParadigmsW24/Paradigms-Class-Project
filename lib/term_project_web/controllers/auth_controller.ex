@@ -52,6 +52,13 @@ defmodule TermProjectWeb.AuthController do
     redirect(conn, external: Ueberauth.Strategy.Helpers.callback_url(conn))
   end
 
+  def single_word(string) do
+    string
+    |> String.trim()
+    |> String.split(~r/\s+/)
+    |> List.first()
+  end
+
   def callback(
         %{assigns: %{ueberauth_auth: %Ueberauth.Auth{info: info, credentials: credentials}}} =
           conn,
@@ -77,7 +84,7 @@ defmodule TermProjectWeb.AuthController do
         conn
         |> put_session(:user_id, user.id)
         |> put_flash(:info, "Welcome #{user.full_name}!")
-        |> redirect(to: "/?username=bhavnoor")
+        |> redirect(to: "/?username=#{single_word(user.full_name)}")
 
       {:error, _reason} ->
         conn
