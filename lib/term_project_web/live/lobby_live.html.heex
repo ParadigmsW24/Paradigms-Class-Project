@@ -42,7 +42,7 @@
           <p class="player-count">
             Players: <span class="count"><%= map_size(lobby.players) %>/<%= lobby.max_players %></span>
           </p>
-          <%= if lobby.password do %>
+          <%= if Map.has_key?(lobby, :password) do %>
             <p class="password-protected">🔒 Password Protected</p>
           <% end %>
         </div>

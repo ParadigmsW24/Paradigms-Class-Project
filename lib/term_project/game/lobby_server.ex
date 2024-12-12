@@ -321,7 +321,7 @@ defmodule TermProject.Game.LobbyServer do
 
   def handle_call({:join_lobby, lobby_id, username, password}, _from, state) do
     with {:ok, lobby} <- lookup_lobby(lobby_id),
-         :ok <- validate_password(lobby, password),
+         :ok <- validate_password_if_needed(lobby, password),
          :ok <- validate_player_status(lobby, username),
          :ok <- validate_lobby_capacity(lobby) do
       updated_lobby = update_lobby_state(lobby, username)
@@ -329,9 +329,8 @@ defmodule TermProject.Game.LobbyServer do
       Phoenix.PubSub.broadcast(TermProject.PubSub, "lobby:#{lobby_id}", :lobby_updated)
       {:reply, :ok, state}
     else
-      {:error, :no_password_required} -> {:reply, {:error, "This lobby does not require a password."}, state}
-      {:error, :incorrect_password} -> {:reply, {:error, "Incorrect password."}, state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -407,12 +406,26 @@ defmodule TermProject.Game.LobbyServer do
     end
   end
 
-  defp validate_password(%{password: nil}, nil), do: :ok
-  defp validate_password(%{password: nil}, _), do: {:error, :no_password_required}
-  defp validate_password(%{password: hash}, password) when is_binary(hash) do
-    if check_password(hash, password), do: :ok, else: {:error, :incorrect_password}
+  defp validate_password_if_needed(lobby, password) do
+    IO.puts("why are u gay")
+    # IO.inspect(lobby.password)
+    if Map.has_key?(lobby, :password) and lobby.password != nil do
+      IO.puts("Validating password")
+      validate_password(lobby, password)
+    else
+      IO.puts("No password to validate")
+      :ok
+    end
+
   end
-  defp validate_password(_, _), do: {:error, :invalid_lobby_structure}
+
+  defp validate_password(lobby, password) do
+    if check_password(lobby.password, password) do
+      :ok
+    else
+      {:error, :incorrect_password}
+    end
+  end
 
   defp validate_player_status(lobby, username) do
     if Map.has_key?(lobby.players, username) do
